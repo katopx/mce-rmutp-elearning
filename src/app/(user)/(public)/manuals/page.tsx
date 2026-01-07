@@ -1,7 +1,6 @@
 import { client } from '@/sanity/lib/client'
 import { BookOpen, ImageIcon, RotateCcw, User } from 'lucide-react'
 import Link from 'next/link'
-import { Suspense } from 'react'
 
 async function showManuals() {
   const query = `*[_type == "manual" && status == "published"] | order(_createdAt desc) {
@@ -69,8 +68,12 @@ export default async function ManualPage() {
                 <span className='font-regular mb-2 w-fit rounded-md bg-blue-50 px-2 py-0.5 text-[10px] text-blue-600'>
                   {manual.category}
                 </span>
-                <h3 className='mb-2 line-clamp-2 text-lg leading-snug font-medium text-slate-900'>{manual.title}</h3>
-                <p className='mb-5 line-clamp-2 flex-1 text-sm font-normal text-slate-500'>{manual.description}</p>
+                <h3 className='mb-2 line-clamp-2 text-lg leading-snug font-medium text-slate-900'>
+                  {manual.title}
+                </h3>
+                <p className='mb-5 line-clamp-2 flex-1 text-sm font-normal text-slate-500'>
+                  {manual.description}
+                </p>
                 <div className='flex items-center justify-between border-t border-slate-100 pt-4 text-xs'>
                   <div className='mr-3 flex min-w-0 flex-1 items-center gap-1.5'>
                     <User size={14} className='shrink-0 opacity-70' />

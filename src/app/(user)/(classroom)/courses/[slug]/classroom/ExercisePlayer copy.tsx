@@ -1,0 +1,228 @@
+'use client'
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { ArrowLeft, ArrowRight, FileQuestion, Trophy } from 'lucide-react'
+import { useState } from 'react'
+
+// ปรับ Type ให้ตรงกับข้อมูลที่ดึงมาจาก Sanity Query ล่าสุด
+interface ExerciseProps {
+  exerciseData: {
+    questions: Array<{
+      _key: string
+      questionType: string
+      content: string // HTML string จาก Editor
+      choices: Array<{
+        _key: string
+        choiceText: string
+        choiceImage?: string
+        isCorrect: boolean
+      }>
+      explanation?: string
+    }>
+  }
+}
+
+const thaiLabels = ['ก', 'ข', 'ค', 'ง', 'จ', 'ฉ', 'ช']
+
+export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
+  const [currentQuestion, setCurrentQuestion] = useState(0)
+  // เปลี่ยนการเก็บค่าจาก index (number) เป็น _key (string) เพื่อความแม่นยำ
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({})
+  const [isFinished, setIsFinished] = useState(false)
+
+  const q = exerciseData.questions[currentQuestion]
+  const isAnswered = (index: number) => selectedAnswers.hasOwnProperty(index)
+
+  // คำนวณข้อที่ถูกจริง โดยหา choice ที่มี isCorrect เป็น true
+  const correctCount = exerciseData.questions.filter((question, idx) => {
+    const userSelectedKey = selectedAnswers[idx]
+    const correctChoice = question.choices?.find((c) => c.isCorrect)
+    return userSelectedKey === correctChoice?._key
+  }).length
+
+  return (
+    <div className='mt-4'>
+      {!isFinished ? (
+        <>
+          <Card className='relative z-10 mb-6 overflow-hidden rounded-xl border border-slate-800'>
+            <CardHeader className='px-6 py-5'>
+              <div className='text-primary mb-2 flex items-center gap-2'>
+                <FileQuestion size={14} />
+                <span className='text-sm'>
+                  ข้อ {currentQuestion + 1} จาก {exerciseData.questions.length}
+                </span>
+              </div>
+              <CardTitle className='text-lg font-medium'>
+                <div
+                  className='jodit-content'
+                  dangerouslySetInnerHTML={{
+                    __html: typeof q.content === 'string' ? q.content : 'ไม่พบคำถาม',
+                  }}
+                />
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent className='px-6'>
+              <RadioGroup
+                key={currentQuestion}
+                value={selectedAnswers[currentQuestion] || ''}
+                onValueChange={(val) =>
+                  setSelectedAnswers({ ...selectedAnswers, [currentQuestion]: val })
+                }
+                className='grid gap-2'
+              >
+                {q.choices?.map((opt, i) => {
+                  const optionId = opt._key
+                  const isActive = selectedAnswers[currentQuestion] === optionId
+                  return (
+                    <Label
+                      key={optionId}
+                      htmlFor={optionId}
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg p-3 transition-colors ${
+                        isActive
+                          ? 'border-primary bg-primary/10 hover:bg-primary/20'
+                          : 'border-secondary hover:bg-secondary/10'
+                      }`}
+                    >
+                      <RadioGroupItem value={optionId} id={optionId} className='sr-only' />
+                      <div
+                        className={`flex size-6 shrink-0 items-center justify-center rounded-full border text-sm font-light ${
+                          isActive
+                            ? 'border-primary bg-primary text-white'
+                            : 'border-secondary text-secondary'
+                        }`}
+                      >
+                        {thaiLabels[i]}
+                      </div>
+
+                      <div className='flex flex-1 flex-col gap-2'>
+                        <span
+                          className={`text-sm ${isActive ? 'text-primary font-medium' : 'text-slate-700'}`}
+                        >
+                          {opt.choiceText}
+                        </span>
+                        {/* แสดงรูปภาพประกอบในตัวเลือก (ถ้ามี) */}
+                        {opt.choiceImage && (
+                          <img
+                            src={opt.choiceImage}
+                            alt={`Option ${i}`}
+                            className='max-h-40 w-fit rounded-lg border border-slate-100 object-contain'
+                          />
+                        )}
+                      </div>
+                    </Label>
+                  )
+                })}
+              </RadioGroup>
+            </CardContent>
+          </Card>
+
+          {/* Footer Navigation */}
+          <div className='flex items-center justify-between'>
+            <Button
+              variant='outline'
+              disabled={currentQuestion === 0}
+              onClick={() => setCurrentQuestion((prev) => prev - 1)}
+            >
+              <ArrowLeft className='size-5' /> ก่อนหน้า
+            </Button>
+
+            <div className='flex gap-2'>
+              {currentQuestion === exerciseData.questions.length - 1 ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button className='bg-green-600 hover:bg-green-700'>ส่งคำตอบ</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className='rounded-xl'>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className='text-xl font-medium'>
+                        ยืนยันการส่งข้อสอบ ?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className='text-base'>
+                        ตอบไปแล้ว {Object.keys(selectedAnswers).length} จาก{' '}
+                        {exerciseData.questions.length} ข้อ
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>ตรวจทาน</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => setIsFinished(true)}
+                        className='bg-green-600 hover:bg-green-700'
+                      >
+                        ยืนยัน
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <Button onClick={() => setCurrentQuestion((prev) => prev + 1)}>
+                  ถัดไป <ArrowRight className='ml-1 size-5' />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Compact Navigator */}
+          <div className='mt-4 flex flex-wrap justify-center gap-2'>
+            {exerciseData.questions.map((_, index) => (
+              <button
+                type='button'
+                key={index}
+                onClick={() => setCurrentQuestion(index)}
+                className={`size-10 rounded-full text-xs transition-all ${
+                  currentQuestion === index
+                    ? 'bg-primary cursor-pointer text-white'
+                    : isAnswered(index)
+                      ? 'cursor-pointer border border-blue-300/50 bg-blue-300/20 hover:bg-blue-300/80'
+                      : 'hover:bg-secondary border-secondary cursor-pointer border bg-white hover:text-white'
+                }`}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        /* Result Page */
+        <Card className='mx-auto max-w-2xl p-8 text-center'>
+          <div className='mb-6 flex justify-center'>
+            <Trophy className='h-16 w-16 text-yellow-500' />
+          </div>
+          <CardTitle className='mb-4 text-2xl text-slate-800'>ส่งคำตอบเรียบร้อย</CardTitle>
+          <div className='mb-8 text-lg font-normal text-slate-600'>
+            ตอบถูกทั้งหมด <span className='font-medium text-green-600'>{correctCount}</span> ข้อ จาก{' '}
+            <span className='font-medium'>{exerciseData.questions.length}</span> ข้อ
+          </div>
+          <div className='flex justify-center gap-4'>
+            <Button variant='outline-muted'>เฉลยคำตอบ</Button>
+
+            <Button
+              onClick={() => {
+                setIsFinished(false)
+                setCurrentQuestion(0)
+                setSelectedAnswers({})
+              }}
+              className='bg-blue-600 hover:bg-blue-700'
+            >
+              ทำใหม่
+            </Button>
+          </div>
+        </Card>
+      )}
+    </div>
+  )
+}

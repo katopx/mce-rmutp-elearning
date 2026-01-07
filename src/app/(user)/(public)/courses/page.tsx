@@ -69,8 +69,12 @@ export default async function CoursesPage() {
                 <span className='font-regular mb-2 w-fit rounded-md bg-blue-50 px-2 py-0.5 text-[10px] text-blue-600'>
                   {course.category}
                 </span>
-                <h3 className='mb-2 line-clamp-2 text-lg leading-snug font-medium text-slate-900'>{course.title}</h3>
-                <p className='mb-5 line-clamp-2 flex-1 text-sm font-normal text-slate-500'>{course.shortDescription}</p>
+                <h3 className='mb-2 line-clamp-2 text-lg leading-snug font-medium text-slate-900'>
+                  {course.title}
+                </h3>
+                <p className='mb-5 line-clamp-2 flex-1 text-sm font-normal text-slate-500'>
+                  {course.shortDescription}
+                </p>
                 <div className='flex items-center justify-between border-t border-slate-100 pt-4 text-xs'>
                   <div className='mr-3 flex min-w-0 flex-1 items-center gap-1.5'>
                     <User size={14} className='shrink-0 opacity-70' />
@@ -80,7 +84,9 @@ export default async function CoursesPage() {
                   </div>
                   <div className='flex shrink-0 items-center gap-1.5'>
                     <Clock size={14} className='shrink-0 opacity-70' />
-                    <span className='font-normal whitespace-nowrap'>{formatDuration(course.courseDuration)}</span>
+                    <span className='font-normal whitespace-nowrap'>
+                      {formatDuration(course.courseDuration)}
+                    </span>
                   </div>
                 </div>
               </div>

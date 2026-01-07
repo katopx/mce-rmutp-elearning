@@ -1,26 +1,19 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
 import VideoPlayer from '@/components/features/video-player'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Trophy, FileText, Clock } from 'lucide-react'
 import { getLessonType } from '@/constants/course'
-import QuizPlayer from './QuizPlayer'
+import { Clock, FileText } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import ExercisePlayer from './ExercisePlayer'
 
 interface LessonContentProps {
   lesson: any
+  courseSlug: string
 }
 
-export default function LessonContent({ lesson }: LessonContentProps) {
-  const [isQuizStarted, setIsQuizStarted] = useState(false)
-
-  {
-    /* --- สั่งหยุดเส้นโหลดเมื่อเนื้อหาเปลี่ยน --- */
-  }
-  useEffect(() => {
-    setIsQuizStarted(false)
-  }, [lesson?._key])
+export default function LessonContent({ lesson, courseSlug }: LessonContentProps) {
+  useEffect(() => {}, [lesson?._key])
 
   if (!lesson)
     return (
@@ -68,8 +61,8 @@ export default function LessonContent({ lesson }: LessonContentProps) {
         {/* 1. กรณีบทเรียนวิดีโอ */}
         {lesson.lessonType === 'video' && (
           <div className='space-y-8'>
-            <div className='aspect-video w-full overflow-hidden rounded-3xl bg-black shadow-2xl'>
-              <VideoPlayer url={lesson.videoUrl} autoPlay={true} canSeek={false} />
+            <div className='aspect-video w-full overflow-hidden rounded-lg bg-black shadow-2xl'>
+              <VideoPlayer url={lesson.videoUrl} autoPlay={false} canSeek={true} />
             </div>
 
             {lesson.videoContent && lesson.videoContent.length > 0 && (
@@ -96,44 +89,21 @@ export default function LessonContent({ lesson }: LessonContentProps) {
           </div>
         )}
 
-        {/* 3. กรณีแบบฝึกหัด หรือ แบบทดสอบ (Quiz / Exercise) */}
-        {(lesson.lessonType === 'quiz' || lesson.lessonType === 'exercise') && (
-          <div className='mt-4'>
-            {!isQuizStarted ? (
-              // --- หน้าต้อนรับ (ที่คุณเขียนไว้) ---
-              <div className='animate-in zoom-in flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/30 py-20 text-center duration-300'>
-                <div className='mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-orange-50 text-orange-500'>
-                  <Trophy size={48} />
-                </div>
-                <h2 className='text-24 mb-2 font-medium text-slate-800'>
-                  {lesson.lessonType === 'quiz' ? 'แบบทดสอบหลังเรียน' : 'แบบฝึกหัดประจำบท'}
-                </h2>
-                <p className='mb-10 max-w-md text-base font-normal text-slate-500'>
-                  ทดสอบความรู้ความเข้าใจในเนื้อหาที่คุณได้เรียนมา มีทั้งหมด{' '}
-                  {lesson.quizData?.questions?.length || 0} ข้อ
-                </p>
-
-                <Button
-                  onClick={() => setIsQuizStarted(true)}
-                  size='lg'
-                  className='text-18 h-14 rounded-2xl bg-orange-500 px-10 font-medium shadow-lg shadow-orange-200 transition-all hover:bg-orange-600 active:scale-95'
-                >
-                  เริ่มทำแบบทดสอบ
-                </Button>
-              </div>
-            ) : (
-              // --- หน้าเครื่องเล่นแบบทดสอบ (QuizPlayer) ---
-              <div className='animate-in slide-in-from-bottom-4 duration-500'>
-                <QuizPlayer
-                  quizData={lesson.quizData}
-                  onComplete={(score) => {
-                    console.log('บันทึกคะแนนลง Database:', score)
-                  }}
-                />
-              </div>
-            )}
+        {/* 3. กรณีแบบฝึกหัด Exercise */}
+        {lesson.lessonType === 'exercise' && (
+          <div className='animate-in fade-in slide-in-from-bottom-4 duration-700'>
+            <ExercisePlayer exerciseData={lesson.exerciseData} />
           </div>
         )}
+
+        {/* 4. กรณีแบบทดสอบ Assessment */}
+        {/* {lesson.lessonType === 'assessment' && (
+          <AssessmentGate
+            data={lesson.assessmentData}
+            courseSlug={courseSlug}
+            lessonId={lesson._key}
+          />
+        )} */}
       </div>
     </div>
   )

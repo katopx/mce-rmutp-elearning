@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { BookOpen } from 'lucide-react'
+import { assert } from 'console'
 
 export default defineType({
   name: 'course',
@@ -209,7 +210,7 @@ export default defineType({
           name: 'module',
           title: 'บท',
           fields: [
-            // 1. ชื่อบท (เช่น บทที่ 1 Module)
+            // ชื่อบท (เช่น บทที่ 1 Module)
             {
               name: 'title',
               title: 'ชื่อบท',
@@ -217,7 +218,7 @@ export default defineType({
               validation: (Rule) => Rule.required(),
             },
 
-            // 2. รายการบทเรียนย่อย (Lessons)
+            // รายการบทเรียนย่อย (Lessons)
             {
               name: 'lessons',
               title: 'เนื้อหาในบทเรียนนี้',
@@ -228,7 +229,7 @@ export default defineType({
                   name: 'lesson',
                   title: 'บทเรียน',
                   fields: [
-                    // --- A. ข้อมูลพื้นฐาน ---
+                    // --- ข้อมูลพื้นฐาน ---
                     {
                       name: 'title',
                       title: 'ชื่อหัวข้อ',
@@ -245,7 +246,7 @@ export default defineType({
                           { title: '🎬 บทเรียนวิดีโอ', value: 'video' },
                           { title: '📄 บทเรียนเนื้อหา', value: 'article' },
                           { title: '📝 แบบฝึกหัด', value: 'exercise' },
-                          { title: '📝 แบบทดสอบ', value: 'quiz' },
+                          { title: '📝 แบบทดสอบ', value: 'assessment' },
                         ],
                         layout: 'radio',
                       },
@@ -257,7 +258,7 @@ export default defineType({
                       initialValue: false,
                     },
 
-                    // --- B. กรณีเลือก Video (จะโชว์เฉพาะตอนเลือก Video) ---
+                    // --- กรณีเลือก Video ---
                     {
                       name: 'videoSource',
                       title: 'แหล่งที่มาของวิดีโอ',
@@ -285,7 +286,7 @@ export default defineType({
                       hidden: ({ parent }) => parent?.lessonType !== 'video',
                     },
 
-                    // --- C. กรณีเลือก Article (จะโชว์เฉพาะตอนเลือก Article) ---
+                    // --- กรณีเลือก Article  ---
                     {
                       name: 'articleContent',
                       title: 'เนื้อหาบทเรียน',
@@ -293,25 +294,157 @@ export default defineType({
                       hidden: ({ parent }) => parent?.lessonType !== 'article',
                     },
 
-                    // --- D. ระบุความยาวบทเรียน (นาที) ---
+                    // --- Exercise (ฝังในหลักสูตร - Inline) ---
+                    {
+                      name: 'exerciseData',
+                      title: 'รายละเอียดแบบฝึกหัดทบทวน',
+                      type: 'object',
+                      hidden: ({ parent }) => parent?.lessonType !== 'exercise',
+                      fields: [
+                        {
+                          name: 'questions',
+                          title: 'รายการคำถาม',
+                          type: 'array',
+                          of: [
+                            {
+                              type: 'object',
+                              name: 'questionItem',
+                              fields: [
+                                {
+                                  name: 'questionType',
+                                  title: 'รูปแบบคำถาม',
+                                  type: 'string',
+                                  options: {
+                                    list: [
+                                      {
+                                        title: 'เลือกตอบคำตอบเดียว (Single Choice)',
+                                        value: 'single',
+                                      },
+                                      {
+                                        title: 'เลือกตอบหลายคำตอบ (Multiple Answers)',
+                                        value: 'multiple',
+                                      },
+                                      { title: 'เติมคำ/อธิบาย (Short Answer)', value: 'text' },
+                                    ],
+                                  },
+                                  initialValue: 'single',
+                                },
+                                {
+                                  name: 'content',
+                                  title: 'โจทย์ (ข้อความ/รูปภาพ)',
+                                  type: 'text',
+                                },
+                                // --- ปรนัย (รองรับทั้ง Single และ Multiple) ---
+                                {
+                                  name: 'choices',
+                                  title: 'ตัวเลือกตอบ (สำหรับข้อสอบปรนัย)',
+                                  type: 'array',
+                                  hidden: ({ parent }) => parent?.questionType === 'text',
+                                  of: [
+                                    {
+                                      type: 'object',
+                                      fields: [
+                                        {
+                                          name: 'choiceText',
+                                          title: 'ข้อความตัวเลือก',
+                                          type: 'string',
+                                        },
+                                        {
+                                          name: 'choiceImage',
+                                          title: 'รูปภาพประกอบตัวเลือก',
+                                          type: 'image',
+                                        },
+                                        {
+                                          name: 'isCorrect',
+                                          title: 'เป็นคำตอบที่ถูก',
+                                          type: 'boolean',
+                                        },
+                                      ],
+                                      preview: {
+                                        select: {
+                                          title: 'choiceText',
+                                          isCorrect: 'isCorrect',
+                                          media: 'choiceImage',
+                                        },
+                                        prepare(selection: any) {
+                                          const { title, isCorrect, media } = selection
+                                          return {
+                                            title: title || 'ไม่มีข้อความ',
+                                            subtitle: isCorrect ? '✅' : '❌',
+                                            media: media,
+                                          }
+                                        },
+                                      },
+                                    },
+                                  ],
+                                },
+                                // --- อัตนัย (เติมคำ) ---
+                                {
+                                  name: 'correctAnswerText',
+                                  title: 'คำตอบที่ถูกต้อง (สำหรับเติมคำ)',
+                                  type: 'string',
+                                  hidden: ({ parent }) => parent?.questionType !== 'text',
+                                },
+                                {
+                                  name: 'explanation',
+                                  title: 'เฉลยละเอียด / คำอธิบาย',
+                                  type: 'text',
+                                },
+                              ],
+                              // Preview สำหรับรายการคำถาม
+                              preview: {
+                                select: { content: 'content', type: 'questionType' },
+                                prepare(selection: any) {
+                                  const { content, type } = selection
+                                  const cleanTitle = content
+                                    ? content.replace(/<[^>]*>/g, '').substring(0, 40) + '...'
+                                    : 'ไม่มีเนื้อหาโจทย์'
+                                  const typeLabel =
+                                    type === 'single'
+                                      ? 'ข้อเดียว'
+                                      : type === 'multiple'
+                                        ? 'หลายคำตอบ'
+                                        : 'เติมคำ'
+                                  return {
+                                    title: cleanTitle,
+                                    subtitle: `รูปแบบ: ${typeLabel}`,
+                                  }
+                                },
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
 
+                    // --- Assessment (อ้างอิงจากคลังข้อสอบ exam.ts - Reference exam.ts) ---
+                    {
+                      name: 'assessmentReference',
+                      title: 'เลือกแบบทดสอบจากคลัง',
+                      type: 'reference',
+                      to: [{ type: 'exam' }],
+                      hidden: ({ parent }) => parent?.lessonType !== 'assessment',
+                    },
+
+                    // --- ระบุความยาวบทเรียน (นาที) ---
                     {
                       name: 'lessonDuration',
                       title: 'ความยาวบทเรียน (นาที)',
                       type: 'number',
                       initialValue: 0,
-                      hidden: ({ parent }) => parent?.lessonType !== 'video' && parent?.lessonType !== 'article',
+                      hidden: ({ parent }) =>
+                        parent?.lessonType !== 'video' && parent?.lessonType !== 'article',
                     },
 
-                    // --- E. กรณีเลือก Quiz (จะโชว์เฉพาะตอนเลือก Quiz) ---
-                    {
-                      name: 'quizReference',
-                      title: 'เลือกชุดข้อสอบ',
-                      description: 'เลือกข้อสอบที่สร้างไว้',
-                      type: 'reference',
-                      to: [{ type: 'exam' }],
-                      hidden: ({ parent }) => parent?.lessonType !== 'quiz',
-                    },
+                    // --- กรณีเลือก Quiz (จะโชว์เฉพาะตอนเลือก Quiz) ---
+                    // {
+                    //   name: 'quizReference',
+                    //   title: 'เลือกชุดข้อสอบ',
+                    //   description: 'เลือกข้อสอบที่สร้างไว้',
+                    //   type: 'reference',
+                    //   to: [{ type: 'exam' }],
+                    //   hidden: ({ parent }) => parent?.lessonType !== 'quiz',
+                    // },
                   ],
 
                   // จัดหน้า Preview
@@ -327,7 +460,7 @@ export default defineType({
                         video: '🎬 Video',
                         article: '📄 Article',
                         exercise: '📝 Exercise',
-                        quiz: '📝 Quiz',
+                        assessment: '📝 Assessment',
                       }
                       let subtitleInfo = icons[lessonType] || 'Unknown'
 

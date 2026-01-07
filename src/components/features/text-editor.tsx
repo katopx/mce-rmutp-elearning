@@ -5,7 +5,9 @@ import { useMemo, useRef } from 'react'
 
 const JoditEditor = dynamic(() => import('jodit-react'), {
   ssr: false,
-  loading: () => <div className='h-[400px] w-full animate-pulse rounded-md border bg-slate-100'></div>,
+  loading: () => (
+    <div className='h-[400px] w-full animate-pulse rounded-md border bg-slate-100'></div>
+  ),
 })
 
 interface TextEditorProps {

@@ -55,10 +55,10 @@ async function showCourseDetail(slug: string) {
         title,
         lessonType,
         lessonDuration,
-        "quizData": quizReference-> {
+        "exerciseQuestionCount": count(exerciseData.questions),
+        "assessmentData": assessmentReference-> {
           _id,
           title,
-          category,
           "questionCount": count(questions)
         }
       }
@@ -76,7 +76,8 @@ async function showCourseDetail(slug: string) {
     "totalLessons": count(modules[].lessons[]),
     "totalVideos": count(modules[].lessons[lessonType == "video"]),
     "totalArticles": count(modules[].lessons[lessonType == "article"]),
-    "totalQuizzes": count(modules[].lessons[lessonType == "quiz"]),
+    "totalExercises": count(modules[].lessons[lessonType == "exercise"]),
+    "totalAssessments": count(modules[].lessons[lessonType == "assessment"]),
     "courseDuration": math::sum(modules[].lessons[].lessonDuration)
   }`
 

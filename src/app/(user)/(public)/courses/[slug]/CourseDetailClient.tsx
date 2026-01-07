@@ -2,7 +2,12 @@
 
 import { AuthGuard } from '@/components/layout/common/auth-guard'
 import GlobalLoading from '@/components/layout/common/GlobalLoading'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -79,7 +84,7 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
   return (
     <div className='flex min-h-screen flex-1 flex-col bg-gray-50/50 pb-10'>
       {/* --- ส่วนหัวเว็บไซต์ ปกใหญ่ ชื่อหลักสูตร --- */}
-      <div className='relative w-full overflow-hidden bg-slate-900 px-4 pt-10 pb-24 sm:px-6 lg:px-8'>
+      <div className='relative w-full overflow-hidden rounded-2xl bg-slate-900 px-4 pt-10 pb-24 sm:px-6 lg:px-8'>
         <div
           className='absolute inset-0 z-0 scale-110 bg-cover bg-center bg-no-repeat opacity-60 blur-md'
           style={{ backgroundImage: `url(${course.image})` }}
@@ -91,7 +96,7 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
             <Button
               variant='ghost'
               size='sm'
-              onClick={() => router.back()}
+              onClick={() => router.push('/courses')}
               className='-ml-2 cursor-pointer gap-1 px-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white'
             >
               <ChevronLeft className='h-4 w-4' />
@@ -107,10 +112,14 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
               )}
 
               {/* ชื่อหลักสูตร */}
-              <h1 className='text-3xl leading-tight font-medium md:text-4xl lg:text-5xl'>{course.title}</h1>
+              <h1 className='text-3xl leading-tight font-medium md:text-4xl lg:text-5xl'>
+                {course.title}
+              </h1>
 
               {/* คำอธิบายย่อ */}
-              <p className='max-w-2xl text-lg leading-relaxed text-slate-200'>{course.shortDescription}</p>
+              <p className='max-w-2xl text-lg leading-relaxed text-slate-200'>
+                {course.shortDescription}
+              </p>
               <div className='flex flex-wrap items-center gap-6 pt-2 text-sm text-slate-200'>
                 {/* ระดับความยากของหลักสูตร */}
                 <div className='flex items-center gap-1.5'>
@@ -136,10 +145,27 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
             <div className='min-h-[500px] rounded-xl border bg-white p-6 shadow-sm'>
               {/* เมนูเลือกแท็บ */}
               <Tabs defaultValue='structure' className='w-full'>
-                <TabsList className='mb-6 grid w-full grid-cols-3 bg-slate-100 p-1'>
-                  <TabsTrigger value='details'>รายละเอียด</TabsTrigger>
-                  <TabsTrigger value='structure'>โครงสร้างหลักสูตร</TabsTrigger>
-                  <TabsTrigger value='instructor'>ผู้สอน</TabsTrigger>
+                <TabsList className='mb-6 flex w-full justify-start rounded-none border-b bg-transparent p-0'>
+                  <TabsTrigger
+                    value='details'
+                    className='hover:text-primary hover:border-b-primary data-[state=active]:border-b-primary data-[state=active]:text-primary cursor-pointer rounded-none border-2 transition-all duration-300 ease-in-out'
+                  >
+                    รายละเอียด
+                  </TabsTrigger>
+
+                  <TabsTrigger
+                    value='structure'
+                    className='hover:text-primary hover:border-b-primary data-[state=active]:border-b-primary data-[state=active]:text-primary cursor-pointer rounded-none border-2 transition-all duration-300 ease-in-out'
+                  >
+                    โครงสร้างหลักสูตร
+                  </TabsTrigger>
+
+                  <TabsTrigger
+                    value='instructor'
+                    className='hover:text-primary hover:border-b-primary data-[state=active]:border-b-primary data-[state=active]:text-primary cursor-pointer rounded-none border-2 transition-all duration-300 ease-in-out'
+                  >
+                    ผู้สอน
+                  </TabsTrigger>
                 </TabsList>
 
                 {/* แท็บรายละเอียด */}
@@ -148,7 +174,9 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                   <div>
                     <h3 className='mb-3 text-xl font-semibold text-slate-800'>คำอธิบายหลักสูตร</h3>
                     {course.description ? (
-                      <p className='leading-relaxed whitespace-pre-line text-slate-600'>{course.description}</p>
+                      <p className='leading-relaxed whitespace-pre-line text-slate-600'>
+                        {course.description}
+                      </p>
                     ) : (
                       <p className='text-slate-400 italic'>ไม่พบข้อมูล</p>
                     )}
@@ -178,28 +206,32 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                   {/* สรุปหัวข้อการเรียนรู้ */}
                   <div className='flex items-center justify-between px-2'>
                     <h3 className='font-semibold text-slate-800'>หัวข้อการเรียนรู้</h3>
-                    <p className='text-sm text-slate-500'>รวมทั้งหมด {course.modules?.length || 0} บทเรียน</p>
+                    <p className='text-sm text-slate-500'>
+                      รวมทั้งหมด {course.modules?.length || 0} บทเรียน
+                    </p>
                   </div>
 
                   {/* แสดงบทเรียน */}
                   {course.modules?.length > 0 ? (
                     <Accordion
                       type='multiple'
-                      defaultValue={course.modules?.map((m: any) => m._key)}
+                      // defaultValue={course.modules?.map((m: any) => m._key)} // ขยายทั้งหมด
                       className='w-full space-y-3'
                     >
                       {course.modules?.map((module: any, index: number) => (
                         <AccordionItem
                           key={module._key}
                           value={module._key}
-                          className='rounded-lg border border-slate-200 bg-slate-50 px-2'
+                          className='rounded-md border border-slate-200 last:border-b'
                         >
-                          <AccordionTrigger className='px-2 py-3 font-medium hover:no-underline'>
+                          <AccordionTrigger className='cursor-pointer px-4 py-3 font-medium hover:rounded-none hover:bg-slate-100 hover:no-underline'>
                             <div className='flex w-full items-center justify-between pr-4'>
                               <span>
                                 บทที่ {index + 1} : {module.title}
                               </span>
-                              <span className='text-sm font-normal'>{module.lessons?.length || 0} หัวข้อ</span>
+                              <span className='text-sm font-normal'>
+                                {module.lessons?.length || 0} หัวข้อ
+                              </span>
                             </div>
                           </AccordionTrigger>
 
@@ -214,7 +246,7 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                               return (
                                 <div
                                   key={lesson._key}
-                                  className='group flex items-center justify-between rounded-md border border-transparent p-3 transition-colors hover:border-slate-100 hover:bg-white'
+                                  className='group flex items-center justify-between p-3 pr-8 pl-8'
                                 >
                                   {/* โซนซ้าย: ไอคอนและชื่อบทเรียน */}
                                   <div className='flex items-center gap-3'>
@@ -229,24 +261,35 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
 
                                   {/* โซนขวา: เวลา หรือ จำนวนข้อ */}
                                   <div className='flex items-center gap-4 text-slate-400'>
-                                    {/* แสดงจำนวนข้อสำหรับแบบทดสอบและแบบฝึกหัด */}
-                                    {(lesson.lessonType === 'quiz' || lesson.lessonType === 'exercise') && (
+                                    {/* แสดงจำนวนข้อสำหรับแบบฝึกหัด */}
+                                    {lesson.lessonType === 'exercise' && (
                                       <div className='flex items-center gap-1'>
                                         <span className='text-xs font-normal'>
-                                          {lesson.quizData?.questionCount || 0} ข้อ
+                                          {lesson.exerciseQuestionCount || 0} ข้อ
                                         </span>
                                       </div>
                                     )}
 
-                                    {/* แสดงเวลาเรียน */}
-                                    {lesson.lessonType !== 'quiz' && lesson.lessonDuration > 0 && (
-                                      <div className='flex items-center gap-1.5'>
-                                        <Clock className='h-3 w-3' />
+                                    {/* แสดงจำนวนข้อสำหรับแบบทดสอบ */}
+                                    {lesson.lessonType === 'assessment' && (
+                                      <div className='flex items-center gap-1'>
                                         <span className='text-xs font-normal'>
-                                          {formatDuration(lesson.lessonDuration)}
+                                          {lesson.assessmentData?.questionCount || 0} ข้อ
                                         </span>
                                       </div>
                                     )}
+
+                                    {/* แสดงเวลาเรียน เฉพาะบทเรียนวิดีโอ และบทเรียนเนื้อหา */}
+                                    {(lesson.lessonType === 'video' ||
+                                      lesson.lessonType === 'article') &&
+                                      lesson.lessonDuration > 0 && (
+                                        <div className='flex items-center gap-1.5'>
+                                          <Clock className='h-3 w-3' />
+                                          <span className='text-xs font-normal'>
+                                            {formatDuration(lesson.lessonDuration)}
+                                          </span>
+                                        </div>
+                                      )}
                                   </div>
                                 </div>
                               )
@@ -262,13 +305,23 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
 
                   {/* แสดงรายการเอกสารประกอบ */}
                   {course.resources?.length > 0 && (
-                    <Accordion type='single' collapsible defaultValue='resources' className='mt-4 w-full'>
-                      <AccordionItem value='resources' className='rounded-lg border bg-slate-50 px-2'>
-                        <AccordionTrigger className='px-2 py-3 font-medium hover:no-underline'>
+                    <Accordion
+                      type='single'
+                      collapsible
+                      defaultValue='resources'
+                      className='mt-4 w-full'
+                    >
+                      <AccordionItem
+                        value='resources'
+                        className='rounded-md border border-slate-200 last:border-b'
+                      >
+                        <AccordionTrigger className='cursor-pointer px-4 py-3 font-medium hover:rounded-none hover:bg-slate-100 hover:no-underline'>
                           {/* สรุปเอกสารประกอบ */}
                           <div className='flex w-full items-center justify-between pr-4'>
                             <span className='text-left text-gray-800'>เอกสารประกอบ</span>
-                            <span className='text-sm font-normal'>{course.resources.length} รายการ</span>
+                            <span className='text-sm font-normal'>
+                              {course.resources.length} รายการ
+                            </span>
                           </div>
                         </AccordionTrigger>
                         <AccordionContent className='pt-0 pb-2'>
@@ -278,7 +331,7 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                                 key={resource._key}
                                 target='_blank'
                                 rel='noopener noreferrer'
-                                className='flex items-center gap-3 rounded-lg border bg-white p-3 transition-all hover:bg-slate-50'
+                                className='flex items-center gap-3 rounded-lg border bg-white p-3'
                               >
                                 {/* ไอคอนแสดงประเภทไฟล์ */}
                                 <div className='flex shrink-0 items-center justify-center'>
@@ -291,7 +344,9 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
 
                                 {/* ชื่อเอกสาร ชื่อไฟล์ */}
                                 <div className='flex flex-col'>
-                                  <span className='line-clamp-1 text-sm font-medium'>{resource.title}</span>
+                                  <span className='line-clamp-1 text-sm font-medium'>
+                                    {resource.title}
+                                  </span>
                                   <span className='text-xs font-normal text-slate-400 uppercase'>
                                     {resource.fileType}
                                   </span>
@@ -316,14 +371,16 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                     }
                     // ดึงข้อมูลผู้สอนร่วม
                     if (course.coInstructors && course.coInstructors.length > 0) {
-                      course.coInstructors.forEach((ins: any) => instructorsList.push({ ...ins, isMain: false }))
+                      course.coInstructors.forEach((ins: any) =>
+                        instructorsList.push({ ...ins, isMain: false }),
+                      )
                     }
                     return instructorsList.length > 0 ? (
                       <div className='grid grid-cols-1 gap-4'>
                         {instructorsList.map((instructor: any, index: number) => (
                           <div
                             key={instructor._id || index}
-                            className='flex flex-col items-center gap-5 rounded-2xl border border-slate-100 bg-slate-50/30 p-5 transition-all hover:bg-white hover:shadow-md md:flex-row md:items-start'
+                            className='flex flex-col items-center gap-5 rounded-2xl border border-slate-200 p-5 transition-all duration-300 ease-in-out hover:scale-102 hover:shadow-md md:flex-row md:items-start'
                           >
                             {/* แสดงรูปผู้สอน */}
                             <Avatar className='h-20 w-20 border-2 border-white shadow-md'>
@@ -367,7 +424,7 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                                     href={instructor.contact.facebook}
                                     target='_blank'
                                     rel='noopener noreferrer'
-                                    className='text-slate-400 transition-colors hover:text-[#1877F2]'
+                                    className='text-slate-400 transition-all duration-300 ease-in-out hover:scale-110 hover:text-[#1877F2]'
                                     title='Facebook'
                                   >
                                     <i className='bi bi-facebook text-xl' />
@@ -380,7 +437,7 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                                     href={`https://line.me/ti/p/~${instructor.contact.line}`}
                                     target='_blank'
                                     rel='noopener noreferrer'
-                                    className='text-slate-400 transition-colors hover:text-[#06C755]'
+                                    className='text-slate-400 transition-all duration-300 ease-in-out hover:scale-110 hover:text-[#06C755]'
                                     title='Line'
                                   >
                                     <i className='bi bi-line text-xl' />
@@ -391,7 +448,7 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                                 {instructor.contact?.phone && (
                                   <a
                                     href={`tel:${instructor.contact.phone}`}
-                                    className='text-slate-400 transition-colors hover:text-blue-600'
+                                    className='text-slate-400 transition-all duration-300 ease-in-out hover:scale-110 hover:text-blue-600'
                                     title='โทร'
                                   >
                                     <i className='bi bi-telephone-fill text-xl' />
@@ -404,7 +461,7 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                                     href={instructor.contact.website}
                                     target='_blank'
                                     rel='noopener noreferrer'
-                                    className='text-slate-400 transition-colors hover:text-slate-900'
+                                    className='text-slate-400 transition-all duration-300 ease-in-out hover:scale-110 hover:text-slate-900'
                                     title='เว็บไซต์'
                                   >
                                     <i className='bi bi-globe text-xl' />
@@ -431,7 +488,11 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
               <div className='overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl'>
                 {/* แสดงภาพหน้าปกหลักสูตร และชื่อหลักสูตร */}
                 <div className='group relative aspect-video bg-slate-200'>
-                  <img src={course.image} className='h-full w-full object-cover' alt={course.title} />
+                  <img
+                    src={course.image}
+                    className='h-full w-full object-cover'
+                    alt={course.title}
+                  />
                 </div>
 
                 <div className='space-y-6 p-6'>
@@ -449,7 +510,7 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
 
                         <Button
                           variant='outline-muted'
-                          onClick={() => router.push(`/courses/${course.slug}/grades`)}
+                          //onClick={() => router.push(`/courses/${course.slug}/grades`)}
                           className='h-11 w-full'
                         >
                           ผลการเรียน
@@ -531,7 +592,7 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                     </div>
 
                     {/* แสดงว่ามีแบบฝึกหัดในหลักสูตร */}
-                    {course.modules?.some((m: any) => m.lessons?.some((l: any) => l.lessonType === 'exercise')) && (
+                    {course.totalExercises > 0 && (
                       <div className='flex items-center gap-4'>
                         <div className='rounded-full p-2'>
                           <CopyCheck size={18} />
@@ -542,8 +603,8 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                       </div>
                     )}
 
-                    {/* แสดงว่ามีแบบทดสอบวัดผลหลังเรียนจบ */}
-                    {course.modules?.some((m: any) => m.lessons?.some((l: any) => l.lessonType === 'quiz')) && (
+                    {/* แสดงว่ามีแบบทดสอบวัดผล ก่อน-หลังเรียนจบ */}
+                    {course.totalAssessments > 0 && (
                       <div className='flex items-center gap-4'>
                         <div className='rounded-full p-2'>
                           <Trophy size={18} />

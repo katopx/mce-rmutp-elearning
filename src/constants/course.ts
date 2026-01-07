@@ -6,15 +6,24 @@ export const getFileIcon = (type: string | undefined) => {
 
   return (
     {
-      link: { label: 'เว็บไซต์ / ลิงก์', icon: 'https://cdn-icons-png.flaticon.com/512/1006/1006771.png' },
+      link: {
+        label: 'เว็บไซต์ / ลิงก์',
+        icon: 'https://cdn-icons-png.flaticon.com/512/1006/1006771.png',
+      },
       zip: { label: 'ไฟล์บีบอัด', icon: 'https://cdn-icons-png.flaticon.com/512/4726/4726042.png' },
       video: { label: 'วิดีโอ', icon: 'https://cdn-icons-png.flaticon.com/512/10260/10260977.png' },
       image: { label: 'รูปภาพ', icon: 'https://cdn-icons-png.flaticon.com/512/8760/8760611.png' },
       pdf: { label: 'PDF', icon: 'https://cdn-icons-png.flaticon.com/512/337/337946.png' },
       word: { label: 'Word', icon: 'https://cdn-icons-png.flaticon.com/512/4725/4725970.png' },
       excel: { label: 'Excel', icon: 'https://cdn-icons-png.flaticon.com/512/4726/4726040.png' },
-      powerpoint: { label: 'PowerPoint', icon: 'https://cdn-icons-png.flaticon.com/512/4726/4726016.png' },
-    }[fileType] || { label: 'ลิงก์', icon: 'https://cdn-icons-png.flaticon.com/512/1006/1006771.png' }
+      powerpoint: {
+        label: 'PowerPoint',
+        icon: 'https://cdn-icons-png.flaticon.com/512/4726/4726016.png',
+      },
+    }[fileType] || {
+      label: 'ลิงก์',
+      icon: 'https://cdn-icons-png.flaticon.com/512/1006/1006771.png',
+    }
   )
 }
 
@@ -38,7 +47,7 @@ export const getLessonType = (type: string | undefined) => {
   const types = {
     video: { label: 'บทเรียนวิดีโอ', icon: PlayCircle, color: 'text-blue-500' },
     article: { label: 'บทเรียนเนื้อหา', icon: FileText, color: 'text-slate-400' },
-    quiz: { label: 'แบบทดสอบ', icon: Trophy, color: 'text-orange-500' },
+    assessment: { label: 'แบบทดสอบ', icon: Trophy, color: 'text-orange-500' },
     exercise: { label: 'แบบฝึกหัด', icon: CopyCheck, color: 'text-green-500' },
   }
   return types[lessonType as keyof typeof types] || types.article

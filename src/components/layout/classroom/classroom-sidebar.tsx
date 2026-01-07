@@ -55,14 +55,14 @@ export function ClassroomSidebar({ course, activeLessonId, ...props }: Classroom
           <TabsList className='grid h-12 w-full grid-cols-2 rounded-none border-b bg-slate-50/50 p-0 group-data-[collapsible=icon]:hidden'>
             <TabsTrigger
               value='timeline'
-              className='data-[state=active]:text-primary hover:text-primary hover:border-b-primary data-[state=active]:border-b-primary h-full cursor-pointer rounded-none border-r border-slate-200 text-sm font-medium transition-all hover:border-b-2 hover:bg-white data-[state=active]:border-b-2 data-[state=active]:bg-white data-[state=active]:shadow-none'
+              className='hover:text-primary hover:border-b-primary data-[state=active]:text-primary data-[state=active]:border-b-primary cursor-pointer rounded-none transition-all duration-300 ease-in-out'
             >
               เนื้อหาบทเรียน
             </TabsTrigger>
 
             <TabsTrigger
               value='resources'
-              className='data-[state=active]:text-primary hover:text-primary hover:border-b-primary data-[state=active]:border-b-primary h-full cursor-pointer rounded-none text-sm font-medium transition-all hover:border-b-2 hover:bg-white data-[state=active]:border-b-2 data-[state=active]:bg-white data-[state=active]:shadow-none'
+              className='hover:text-primary hover:border-b-primary data-[state=active]:text-primary data-[state=active]:border-b-primary cursor-pointer rounded-none transition-all duration-300 ease-in-out'
             >
               เอกสารประกอบ
             </TabsTrigger>
@@ -72,14 +72,18 @@ export function ClassroomSidebar({ course, activeLessonId, ...props }: Classroom
             <ScrollArea className='h-full'>
               {/* --- รายการบทเรียน --- */}
               <TabsContent value='timeline' className='m-0 border-none p-0'>
-                <Accordion type='multiple' defaultValue={allModuleKeys} className='w-full'>
+                <Accordion
+                  type='multiple'
+                  className='w-full'
+                  //defaultValue={allModuleKeys} // ขยายทุกโมดูลเริ่มต้น
+                >
                   {course.modules.map((module: any, index: number) => (
                     <AccordionItem
                       key={module._key}
                       value={module._key}
                       className='border-b border-slate-200 last:border-0'
                     >
-                      <AccordionTrigger className='cursor-pointer px-5 py-4 transition-colors group-data-[collapsible=icon]:hidden hover:bg-slate-200/80 hover:no-underline'>
+                      <AccordionTrigger className='cursor-pointer px-5 py-4 transition-colors group-data-[collapsible=icon]:hidden hover:rounded-none hover:bg-slate-200/80 hover:no-underline'>
                         <div className='flex flex-col items-start text-left'>
                           <span className='text-sm font-medium'>
                             บทที่ {index + 1} : {module.title}

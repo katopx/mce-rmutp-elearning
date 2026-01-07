@@ -24,22 +24,50 @@ async function getCourseClassroom(slug: string) {
         videoContent,
         articleContent,
 
-        // ดึงข้อมูลจาก exam.ts
-	      "quizData": quizReference-> {
-          _id,
-          title,
-          category,
-          passingScore,
-          questions[] {
+        // ดึงข้อมูลจาก Exercise (Inline จาก course.ts)
+        "exerciseData": {
+          "questions": exerciseData.questions[] {
             _key,
+            questionType,
             content,
             choices[] {
               _key,
               choiceText,
-              isCorrect,
+              "choiceImage": choiceImage.asset->url,
+              isCorrect
             },
+            correctAnswerText,
             explanation
+          },
+          "questionCount": count(exerciseData.questions)
+        },
+        
+
+        // ดึงข้อมูล Assessment (จาก exam.ts)
+        "assessmentData": assessmentReference-> {
+          _id,
+          title,
+          passingScore,
+          timeLimit,
+          shuffleQuestions,
+          shuffleChoices,
+          showResultImmediate,
+          allowReview,
+          preventTabSwitch,
+          preventCopyPaste,
+          questions[] {
+            _key,
+            questionType,
+            content,
+            choices[] {
+              _key,
+              choiceText,
+              "choiceImage": choiceImage.asset->url,
+              isCorrect
             },
+            correctAnswerText,
+            explanation
+          },
           "questionCount": count(questions)
         }
       }
@@ -57,7 +85,8 @@ async function getCourseClassroom(slug: string) {
     "totalLessons": count(modules[].lessons[]),
     "totalVideos": count(modules[].lessons[lessonType == "video"]),
     "totalArticles": count(modules[].lessons[lessonType == "article"]),
-    "totalQuizzes": count(modules[].lessons[lessonType == "quiz"]),
+    "totalExercises": count(modules[].lessons[lessonType == "exercise"]),
+    "totalAssessments": count(modules[].lessons[lessonType == "assessment"]),
     "courseDuration": math::sum(modules[].lessons[].lessonDuration)
   }`
 

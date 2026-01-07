@@ -108,9 +108,8 @@ export default defineType({
             },
             {
               name: 'content',
-              title: 'โจทย์ (Rich Text / HTML)',
-              type: 'array',
-              of: [{ type: 'block' }, { type: 'image', options: { hotspot: true } }],
+              title: 'โจทย์ (ข้อความ/รูปภาพ)',
+              type: 'text',
             },
             // ตัวเลือกสำหรับปรนัย (Single/Multiple)
             {
