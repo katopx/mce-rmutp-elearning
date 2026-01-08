@@ -48,11 +48,29 @@ export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
   const isAnswered = (index: number) => selectedAnswers.hasOwnProperty(index)
 
   // คำนวณข้อที่ถูกจริง โดยหา choice ที่มี isCorrect เป็น true
-  const correctCount = exerciseData.questions.filter((question, idx) => {
-    const userSelectedKey = selectedAnswers[idx]
-    const correctChoice = question.choices?.find((c) => c.isCorrect)
-    return userSelectedKey === correctChoice?._key
-  }).length
+  const correctCount = exerciseData.questions.reduce((acc, question, idx) => {
+    const userAns = selectedAnswers[idx]
+
+    // 1. ถ้าผู้เรียนยังไม่ได้ทำข้อนี้ ให้ข้ามไปเลย
+    if (!userAns) return acc
+
+    if (question.questionType === 'multiple') {
+      // กรณีเลือกตอบหลายข้อ: ต้องเลือก "ครบ" และ "ถูกต้องทุกข้อ"
+      const correctKeys = question.choices
+        ?.filter((c) => c.isCorrect)
+        .map((c) => c._key)
+        .sort()
+
+      const userKeys = Array.isArray(userAns) ? [...userAns].sort() : []
+
+      const isCorrect = JSON.stringify(correctKeys) === JSON.stringify(userKeys)
+      return isCorrect ? acc + 1 : acc
+    } else {
+      // กรณีเลือกตอบข้อเดียว (Single หรืออื่นๆ)
+      const correctChoice = question.choices?.find((c) => c.isCorrect)
+      return userAns === correctChoice?._key ? acc + 1 : acc
+    }
+  }, 0)
 
   return (
     <div className='mt-4'>

@@ -41,18 +41,37 @@ const thaiLabels = ['ก', 'ข', 'ค', 'ง', 'จ', 'ฉ', 'ช']
 export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   // เปลี่ยนการเก็บค่าจาก index (number) เป็น _key (string) เพื่อความแม่นยำ
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({})
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string | string[]>>({})
   const [isFinished, setIsFinished] = useState(false)
+  const [isReviewMode, setIsReviewMode] = useState(false)
 
   const q = exerciseData.questions[currentQuestion]
   const isAnswered = (index: number) => selectedAnswers.hasOwnProperty(index)
 
   // คำนวณข้อที่ถูกจริง โดยหา choice ที่มี isCorrect เป็น true
-  const correctCount = exerciseData.questions.filter((question, idx) => {
-    const userSelectedKey = selectedAnswers[idx]
-    const correctChoice = question.choices?.find((c) => c.isCorrect)
-    return userSelectedKey === correctChoice?._key
-  }).length
+  const correctCount = exerciseData.questions.reduce((acc, question, idx) => {
+    const userAns = selectedAnswers[idx]
+
+    // 1. ถ้าผู้เรียนยังไม่ได้ทำข้อนี้ ให้ข้ามไปเลย
+    if (!userAns) return acc
+
+    if (question.questionType === 'multiple') {
+      // กรณีเลือกตอบหลายข้อ: ต้องเลือก "ครบ" และ "ถูกต้องทุกข้อ"
+      const correctKeys = question.choices
+        ?.filter((c) => c.isCorrect)
+        .map((c) => c._key)
+        .sort()
+
+      const userKeys = Array.isArray(userAns) ? [...userAns].sort() : []
+
+      const isCorrect = JSON.stringify(correctKeys) === JSON.stringify(userKeys)
+      return isCorrect ? acc + 1 : acc
+    } else {
+      // กรณีเลือกตอบข้อเดียว (Single หรืออื่นๆ)
+      const correctChoice = question.choices?.find((c) => c.isCorrect)
+      return userAns === correctChoice?._key ? acc + 1 : acc
+    }
+  }, 0)
 
   return (
     <div className='mt-4'>
@@ -79,31 +98,67 @@ export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
             <CardContent className='px-6'>
               <RadioGroup
                 key={currentQuestion}
-                value={selectedAnswers[currentQuestion] || ''}
-                onValueChange={(val) =>
-                  setSelectedAnswers({ ...selectedAnswers, [currentQuestion]: val })
+                disabled={isReviewMode} // ปิดการเลือกคำตอบในโหมดเฉลย
+                value={
+                  q.questionType === 'multiple'
+                    ? ''
+                    : (selectedAnswers[currentQuestion] as string) || ''
                 }
+                onValueChange={(val) => {
+                  if (q.questionType === 'multiple') {
+                    const currentRes =
+                      (selectedAnswers[currentQuestion] as unknown as string[]) || []
+                    const nextRes = currentRes.includes(val)
+                      ? currentRes.filter((v) => v !== val)
+                      : [...currentRes, val]
+                    setSelectedAnswers({ ...selectedAnswers, [currentQuestion]: nextRes as any })
+                  } else {
+                    setSelectedAnswers({ ...selectedAnswers, [currentQuestion]: val })
+                  }
+                }}
                 className='grid gap-2'
               >
                 {q.choices?.map((opt, i) => {
                   const optionId = opt._key
-                  const isActive = selectedAnswers[currentQuestion] === optionId
+                  const isActive = Array.isArray(selectedAnswers[currentQuestion])
+                    ? (selectedAnswers[currentQuestion] as unknown as string[]).includes(optionId)
+                    : selectedAnswers[currentQuestion] === optionId
+
+                  let reviewColorClasses = ''
+                  if (isReviewMode) {
+                    if (opt.isCorrect) {
+                      // ถ้าเป็นข้อที่ถูก -> สีเขียว
+                      reviewColorClasses = 'border-green-500 bg-green-50'
+                    } else if (isActive && !opt.isCorrect) {
+                      // ถ้าเราเลือกแต่ผิด -> สีแดง
+                      reviewColorClasses = 'border-red-500 bg-red-50'
+                    } else {
+                      // ข้ออื่นๆ ในหน้าเฉลย
+                      reviewColorClasses = 'border-secondary opacity-60'
+                    }
+                  } else {
+                    // โหมดปกติ:
+                    reviewColorClasses = isActive
+                      ? 'border-primary bg-primary/10 hover:bg-primary/20'
+                      : 'border-secondary hover:bg-secondary/10'
+                  }
+
                   return (
                     <Label
                       key={optionId}
                       htmlFor={optionId}
-                      className={`flex cursor-pointer items-center gap-3 rounded-lg p-3 transition-colors ${
-                        isActive
-                          ? 'border-primary bg-primary/10 hover:bg-primary/20'
-                          : 'border-secondary hover:bg-secondary/10'
-                      }`}
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg p-3 transition-colors ${reviewColorClasses}`}
                     >
                       <RadioGroupItem value={optionId} id={optionId} className='sr-only' />
                       <div
                         className={`flex size-6 shrink-0 items-center justify-center rounded-full border text-sm font-light ${
-                          isActive
-                            ? 'border-primary bg-primary text-white'
-                            : 'border-secondary text-secondary'
+                          isReviewMode && opt.isCorrect
+                            ? 'border-green-500 bg-green-500 text-white'
+                            : isReviewMode && isActive && !opt.isCorrect
+                              ? 'border-red-500 bg-red-500 text-white'
+                              : isActive
+                                ? 'border-primary bg-primary text-white'
+                                : 'border-secondary text-secondary'
                         }`}
                       >
                         {thaiLabels[i]}
@@ -128,6 +183,14 @@ export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
                   )
                 })}
               </RadioGroup>
+              {isReviewMode && q.explanation && (
+                <div className='animate-in fade-in slide-in-from-top-1 mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800'>
+                  <div className='flex items-start gap-2'>
+                    <span className='shrink-0 font-medium'>💡 อธิบายคำตอบ:</span>
+                    <div dangerouslySetInnerHTML={{ __html: q.explanation }} />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -145,7 +208,9 @@ export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
               {currentQuestion === exerciseData.questions.length - 1 ? (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button className='bg-green-600 hover:bg-green-700'>ส่งคำตอบ</Button>
+                    <Button disabled={isReviewMode} className='bg-green-600 hover:bg-green-700'>
+                      ส่งคำตอบ
+                    </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent className='rounded-xl'>
                     <AlertDialogHeader>
@@ -208,7 +273,16 @@ export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
             <span className='font-medium'>{exerciseData.questions.length}</span> ข้อ
           </div>
           <div className='flex justify-center gap-4'>
-            <Button variant='outline-muted'>เฉลยคำตอบ</Button>
+            <Button
+              variant='outline-muted'
+              onClick={() => {
+                setIsFinished(false)
+                setIsReviewMode(true)
+                setCurrentQuestion(0)
+              }}
+            >
+              เฉลยคำตอบ
+            </Button>
 
             <Button
               onClick={() => {
