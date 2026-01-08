@@ -10,7 +10,7 @@ async function showCourses() {
     "slug": slug.current,
     shortDescription,
     "image": image.asset->url,
-    "category": coalesce(categories[0]->title),
+    "category": (category[0]->title),
     "instructor": instructor->name,
     "courseDuration": math::sum(modules[].lessons[].lessonDuration)
   }`

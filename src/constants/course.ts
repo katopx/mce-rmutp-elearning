@@ -4,28 +4,41 @@ import { PlayCircle, FileText, Trophy, CopyCheck } from 'lucide-react'
 export const getFileIcon = (type: string | undefined) => {
   const fileType = type?.toLowerCase() || 'link'
 
-  return (
-    {
-      link: {
-        label: 'เว็บไซต์ / ลิงก์',
-        icon: 'https://cdn-icons-png.flaticon.com/512/1006/1006771.png',
-      },
-      zip: { label: 'ไฟล์บีบอัด', icon: 'https://cdn-icons-png.flaticon.com/512/4726/4726042.png' },
-      video: { label: 'วิดีโอ', icon: 'https://cdn-icons-png.flaticon.com/512/10260/10260977.png' },
-      image: { label: 'รูปภาพ', icon: 'https://cdn-icons-png.flaticon.com/512/8760/8760611.png' },
-      pdf: { label: 'PDF', icon: 'https://cdn-icons-png.flaticon.com/512/337/337946.png' },
-      word: { label: 'Word', icon: 'https://cdn-icons-png.flaticon.com/512/4725/4725970.png' },
-      excel: { label: 'Excel', icon: 'https://cdn-icons-png.flaticon.com/512/4726/4726040.png' },
-      powerpoint: {
-        label: 'PowerPoint',
-        icon: 'https://cdn-icons-png.flaticon.com/512/4726/4726016.png',
-      },
-    }[fileType] || {
-      label: 'ลิงก์',
+  // ดึงข้อมูล Map ออกมาเป็นตัวแปร เพื่อให้นำไปสร้างรายการต่อได้
+  const resourceMap: Record<string, { label: string; icon: string }> = {
+    link: {
+      label: 'เว็บไซต์ / ลิงก์',
       icon: 'https://cdn-icons-png.flaticon.com/512/1006/1006771.png',
-    }
-  )
+    },
+    zip: { label: 'ไฟล์บีบอัด', icon: 'https://cdn-icons-png.flaticon.com/512/4726/4726042.png' },
+    video: { label: 'วิดีโอ', icon: 'https://cdn-icons-png.flaticon.com/512/10260/10260977.png' },
+    image: { label: 'รูปภาพ', icon: 'https://cdn-icons-png.flaticon.com/512/8760/8760611.png' },
+    pdf: { label: 'PDF', icon: 'https://cdn-icons-png.flaticon.com/512/337/337946.png' },
+    word: { label: 'Word', icon: 'https://cdn-icons-png.flaticon.com/512/4725/4725970.png' },
+    excel: { label: 'Excel', icon: 'https://cdn-icons-png.flaticon.com/512/4726/4726040.png' },
+    powerpoint: {
+      label: 'PowerPoint',
+      icon: 'https://cdn-icons-png.flaticon.com/512/4726/4726016.png',
+    },
+  }
+
+  return resourceMap[fileType] || resourceMap.link
 }
+
+// สร้างรายการ Resource ทั้งหมดสำหรับใช้ในฟิลเตอร์หรือ Select
+export const ALL_RESOURCE_TYPES = [
+  'link',
+  'pdf',
+  'word',
+  'excel',
+  'powerpoint',
+  'zip',
+  'video',
+  'image',
+].map((type) => ({
+  id: type,
+  ...getFileIcon(type),
+}))
 
 //{getCourseDifficulty(course.difficulty).label}
 export const getCourseDifficulty = (difficulty: string | undefined) => {

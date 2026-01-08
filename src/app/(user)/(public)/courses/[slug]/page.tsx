@@ -16,7 +16,7 @@ async function showCourseDetail(slug: string) {
     rating,
     registered,
     "image": image.asset->url,
-    "category": coalesce(categories[0]->title),
+    "category": category[]->title,
     
     // ข้อมูลผู้สอนหลัก
     "instructor": instructor-> {
