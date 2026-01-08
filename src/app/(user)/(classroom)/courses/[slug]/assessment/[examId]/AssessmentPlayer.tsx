@@ -15,12 +15,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { ArrowLeft, ArrowRight, FileQuestion, Trophy } from 'lucide-react'
-import { useState } from 'react'
+import { AlertCircle, ArrowLeft, ArrowRight, FileQuestion, Timer, Trophy } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 
 // ปรับ Type ให้ตรงกับข้อมูลที่ดึงมาจาก Sanity Query ล่าสุด
 interface ExerciseProps {
-  exerciseData: {
+  assessmentData: {
+    title: string
+    timeLimit: number
     questions: Array<{
       _key: string
       questionType: string
@@ -38,24 +40,52 @@ interface ExerciseProps {
 
 const thaiLabels = ['ก', 'ข', 'ค', 'ง', 'จ', 'ฉ', 'ช']
 
-export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
+export default function ExercisePlayer({ assessmentData }: ExerciseProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0)
-  // เปลี่ยนการเก็บค่าจาก index (number) เป็น _key (string) เพื่อความแม่นยำ
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({})
   const [isFinished, setIsFinished] = useState(false)
+  const [isReviewMode, setIsReviewMode] = useState(false)
 
-  const q = exerciseData.questions[currentQuestion]
+  // state สำหรับจับเวลาข้อสอบ
+  const [timeLeft, setTimeLeft] = useState(assessmentData.timeLimit * 60)
+  const [isTimeOut, setIsTimeOut] = useState(false)
+
+  const q = assessmentData.questions[currentQuestion]
   const isAnswered = (index: number) => selectedAnswers.hasOwnProperty(index)
 
-  // คำนวณข้อที่ถูกจริง โดยหา choice ที่มี isCorrect เป็น true
-  const correctCount = exerciseData.questions.reduce((acc, question, idx) => {
+  const handleSubmit = useCallback(() => {
+    setIsFinished(true)
+  }, [])
+
+  useEffect(() => {
+    if (timeLeft <= 0 || isFinished) {
+      if (timeLeft <= 0 && !isFinished) {
+        setIsTimeOut(true)
+        handleSubmit()
+      }
+      return
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1)
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [timeLeft, isFinished, handleSubmit])
+
+  // ฟังก์ชันแปลงวินาทีเป็น MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const correctCount = assessmentData.questions.reduce((acc, question, idx) => {
     const userAns = selectedAnswers[idx]
 
-    // 1. ถ้าผู้เรียนยังไม่ได้ทำข้อนี้ ให้ข้ามไปเลย
     if (!userAns) return acc
 
     if (question.questionType === 'multiple') {
-      // กรณีเลือกตอบหลายข้อ: ต้องเลือก "ครบ" และ "ถูกต้องทุกข้อ"
       const correctKeys = question.choices
         ?.filter((c) => c.isCorrect)
         .map((c) => c._key)
@@ -74,6 +104,19 @@ export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
 
   return (
     <div className='mt-4'>
+      {/* ⏱️ ตัวจับเวลา */}
+      {!isFinished && (
+        <div
+          className={`sticky top-20 z-20 mb-4 flex items-center justify-between rounded-full border px-6 py-2 shadow-sm ${timeLeft < 60 ? 'animate-pulse border-red-200 bg-red-50 text-red-600' : 'border-slate-200 bg-white text-slate-700'}`}
+        >
+          <div className='flex items-center gap-2 font-medium'>
+            <Timer size={18} />
+            <span>{timeLeft < 60 ? 'ใกล้หมดเวลาแล้ว!' : 'เวลาที่เหลือ'}</span>
+          </div>
+          <div className='font-mono text-xl font-bold'>{formatTime(timeLeft)}</div>
+        </div>
+      )}
+
       {!isFinished ? (
         <>
           <Card className='relative z-10 mb-6 overflow-hidden rounded-xl border border-slate-800'>
@@ -81,7 +124,7 @@ export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
               <div className='text-primary mb-2 flex items-center gap-2'>
                 <FileQuestion size={14} />
                 <span className='text-sm'>
-                  ข้อ {currentQuestion + 1} จาก {exerciseData.questions.length}
+                  ข้อ {currentQuestion + 1} จาก {assessmentData.questions.length}
                 </span>
               </div>
               <CardTitle className='text-lg font-medium'>
@@ -160,25 +203,28 @@ export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
             </Button>
 
             <div className='flex gap-2'>
-              {currentQuestion === exerciseData.questions.length - 1 ? (
+              {currentQuestion === assessmentData.questions.length - 1 ? (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button className='bg-green-600 hover:bg-green-700'>ส่งคำตอบ</Button>
+                    <Button className='bg-green-600 hover:bg-green-700'>ส่งข้อสอบ</Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent className='rounded-xl'>
                     <AlertDialogHeader>
                       <AlertDialogTitle className='text-xl font-medium'>
                         ยืนยันการส่งข้อสอบ ?
                       </AlertDialogTitle>
+                      <AlertDialogDescription className='text-xl font-medium'>
+                        หากส่งแล้วจะไม่สามารถกลับมาแก้ไขคำตอบได้
+                      </AlertDialogDescription>
                       <AlertDialogDescription className='text-base'>
                         ตอบไปแล้ว {Object.keys(selectedAnswers).length} จาก{' '}
-                        {exerciseData.questions.length} ข้อ
+                        {assessmentData.questions.length} ข้อ
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>ตรวจทาน</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => setIsFinished(true)}
+                        onClick={handleSubmit}
                         className='bg-green-600 hover:bg-green-700'
                       >
                         ยืนยัน
@@ -196,7 +242,7 @@ export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
 
           {/* Compact Navigator */}
           <div className='mt-4 flex flex-wrap justify-center gap-2'>
-            {exerciseData.questions.map((_, index) => (
+            {assessmentData.questions.map((_, index) => (
               <button
                 type='button'
                 key={index}
@@ -217,17 +263,21 @@ export default function ExercisePlayer({ exerciseData }: ExerciseProps) {
       ) : (
         /* Result Page */
         <Card className='mx-auto max-w-2xl p-8 text-center'>
+          {isTimeOut && (
+            <div className='mb-4 flex items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 p-3 text-red-600'>
+              <AlertCircle size={20} />
+              <span className='font-medium'>หมดเวลาการทำข้อสอบ ระบบได้ส่งคำตอบให้อัตโนมัติ</span>
+            </div>
+          )}
           <div className='mb-6 flex justify-center'>
             <Trophy className='h-16 w-16 text-yellow-500' />
           </div>
           <CardTitle className='mb-4 text-2xl text-slate-800'>ส่งคำตอบเรียบร้อย</CardTitle>
           <div className='mb-8 text-lg font-normal text-slate-600'>
             ตอบถูกทั้งหมด <span className='font-medium text-green-600'>{correctCount}</span> ข้อ จาก{' '}
-            <span className='font-medium'>{exerciseData.questions.length}</span> ข้อ
+            <span className='font-medium'>{assessmentData.questions.length}</span> ข้อ
           </div>
           <div className='flex justify-center gap-4'>
-            <Button variant='outline-muted'>เฉลยคำตอบ</Button>
-
             <Button
               onClick={() => {
                 setIsFinished(false)

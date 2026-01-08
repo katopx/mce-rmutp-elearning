@@ -3,9 +3,11 @@
 import VideoPlayer from '@/components/features/video-player'
 import { Badge } from '@/components/ui/badge'
 import { getLessonType } from '@/constants/course'
-import { Clock, FileText } from 'lucide-react'
+import { ArrowRight, Clock, FileText, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import ExercisePlayer from './ExercisePlayer'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 interface LessonContentProps {
   lesson: any
@@ -97,13 +99,67 @@ export default function LessonContent({ lesson, courseSlug }: LessonContentProps
         )}
 
         {/* 4. กรณีแบบทดสอบ Assessment */}
-        {/* {lesson.lessonType === 'assessment' && (
-          <AssessmentGate
-            data={lesson.assessmentData}
-            courseSlug={courseSlug}
-            lessonId={lesson._key}
-          />
-        )} */}
+        {lesson.lessonType === 'assessment' && lesson.assessmentData && (
+          <div className='animate-in fade-in slide-in-from-bottom-4 duration-700'>
+            <div className='mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm'>
+              {/* Icon & Status */}
+              <div className='bg-primary/5 text-primary mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full'>
+                <Trophy size={40} />
+              </div>
+
+              <h2 className='mb-2 text-2xl font-bold text-slate-900'>
+                แบบทดสอบ: {lesson.assessmentData.title}
+              </h2>
+              <p className='mb-8 text-slate-500'>
+                นี่คือแบบทดสอบประเมินผลความรู้ประจำบทเรียน <br />
+                โปรดเตรียมตัวให้พร้อมก่อนกดเริ่มทำข้อสอบ
+              </p>
+
+              {/* ข้อมูลเบื้องต้น (Stats) */}
+              <div className='mb-10 grid grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-6'>
+                <div className='text-center'>
+                  <p className='text-xs font-medium tracking-wider text-slate-400 uppercase'>
+                    จำนวนข้อสอบ
+                  </p>
+                  <p className='text-xl font-bold text-slate-800'>
+                    {lesson.assessmentData.questionCount} ข้อ
+                  </p>
+                </div>
+                <div className='border-l border-slate-200 text-center'>
+                  <p className='text-xs font-medium tracking-wider text-slate-400 uppercase'>
+                    เวลาที่กำหนด
+                  </p>
+                  <p className='text-xl font-bold text-slate-800'>
+                    {lesson.assessmentData.timeLimit} นาที
+                  </p>
+                </div>
+              </div>
+
+              {/* กฎการสอบเล็กน้อย */}
+              <div className='mb-10 space-y-2 text-left text-sm text-slate-600'>
+                <div className='flex items-center gap-2 text-slate-600'>
+                  <span className='h-1 w-1 shrink-0 rounded-full bg-slate-400' />
+                  <span>เมื่อกดเริ่มแล้ว เวลาจะเริ่มนับถอยหลังทันที</span>
+                </div>
+                <div className='mt-2 flex items-center gap-2 text-slate-600'>
+                  <span className='h-1 w-1 shrink-0 rounded-full bg-slate-400' />
+                  <span>ระบบจะส่งคำตอบอัตโนมัติเมื่อหมดเวลา</span>
+                </div>
+              </div>
+
+              {/* ปุ่มกดไปหน้าสอบ */}
+              <Button
+                asChild
+                size='lg'
+                className='shadow-primary/20 h-14 w-full rounded-full text-lg font-medium shadow-lg transition-all hover:scale-[1.02]'
+              >
+                <Link href={`/courses/${courseSlug}/assessment/${lesson.assessmentData._id}`}>
+                  เริ่มทำแบบทดสอบ <ArrowRight className='ml-2' size={20} />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
