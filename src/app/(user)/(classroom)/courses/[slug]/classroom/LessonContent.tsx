@@ -112,7 +112,7 @@ export default function LessonContent({ lesson, courseSlug }: LessonContentProps
               </h2>
               <p className='mb-8 text-slate-500'>
                 นี่คือแบบทดสอบประเมินผลความรู้ประจำบทเรียน <br />
-                โปรดเตรียมตัวให้พร้อมก่อนกดเริ่มทำข้อสอบ
+                โปรดเตรียมตัวให้พร้อมก่อนกดเริ่มทำแบบทดสอบ
               </p>
 
               {/* ข้อมูลเบื้องต้น (Stats) */}

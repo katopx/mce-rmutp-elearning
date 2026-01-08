@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"
+    />
+    <title>Binary Addition Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ปรับแต่งเพื่อให้เหมาะกับการฝังใน iframe */
+      html {
+        font-size: 14px;
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', 'Noto Sans Thai', sans-serif;
+        background-color: transparent; /* ให้เนียนไปกับพื้นหลัง Classroom */
+      }
+      .bitcell {
+        width: 2.2rem;
+        height: 2.2rem;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .mono {
+        font-feature-settings: 'tnum' 1;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type='text'].bitcell {
+        border: 1px dashed #cbd5e1;
+        outline: none;
+        transition: all 0.2s;
+      }
+      input[type='text'].bitcell:focus {
+        border-style: solid;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgb(59 130 246 / 0.2);
+      }
+
+      /* ซ่อน scrollbar สำหรับตกแต่งแต่ยังเลื่อนได้ */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      /* ป้องกันการเลื่อนทั้งหน้าถ้าฝังใน iframe */
+      html,
+      body {
+        overflow-x: hidden;
+      }
+    </style>
+  </head>
+  <body class="p-2 sm:p-4">
+    <div id="content-wrapper">
+      <header class="mb-6">
+        <h1 class="flex items-center gap-2 text-xl font-bold text-slate-900 sm:text-2xl">
+          <span class="rounded-lg bg-blue-600 p-2 text-sm text-white">Lab</span>
+          แบบฝึกหัด: บวกเลขฐานสอง
+        </h1>
+        <p class="mt-2 text-sm text-slate-500">เติมคำตอบในช่องว่าง และกดตรวจคำตอบเพื่อดูคะแนน</p>
+      </header>
+
+      <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="grid grid-cols-2 items-end gap-3 sm:grid-cols-5">
+          <div class="col-span-1">
+            <span class="text-xs font-semibold text-slate-500 uppercase">บิต</span>
+            <input
+              id="bits"
+              type="number"
+              min="3"
+              max="16"
+              value="8"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div class="col-span-1">
+            <span class="text-xs font-semibold text-slate-500 uppercase">จำนวนข้อ</span>
+            <input
+              id="count"
+              type="number"
+              min="1"
+              max="10"
+              value="2"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div class="col-span-2 sm:col-span-1">
+            <span class="text-xs font-semibold text-slate-500 uppercase">ล้นบิต</span>
+            <select
+              id="allowOverflow"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 outline-none"
+            >
+              <option value="yes" selected>Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <div class="col-span-2">
+            <div class="flex gap-2">
+              <button
+                id="btnGen"
+                class="flex-1 rounded-xl bg-slate-900 py-2 font-medium text-white transition-colors hover:bg-black"
+              >
+                สุ่มโจทย์
+              </button>
+              <button
+                id="btnCheck"
+                class="flex-1 rounded-xl bg-emerald-600 py-2 font-medium text-white transition-colors hover:bg-emerald-700"
+              >
+                ตรวจ
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div
+        id="scoreBox"
+        class="mb-4 hidden rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-center font-semibold text-emerald-700"
+      ></div>
+
+      <section id="problems" class="no-scrollbar space-y-6 overflow-x-auto pb-10"></section>
+    </div>
+
+    <template id="tplProblem">
+      <div
+        class="problem min-w-[500px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
+        data-idx=""
+      >
+        <div class="mb-4 flex items-center justify-between border-b border-slate-50 pb-3">
+          <h3 class="text-md flex items-center gap-2 font-bold text-slate-800">
+            ข้อที่ <span class="probNo"></span>
+            <span class="probHeaderContent text-sm font-normal text-slate-500"></span>
+          </h3>
+          <div class="mono rounded bg-slate-100 px-2 py-1 text-[10px] text-slate-400">
+            ID: <span class="probId"></span>
+          </div>
+        </div>
+
+        <div class="no-scrollbar overflow-x-auto">
+          <div class="flex flex-row gap-12">
+            <div class="space-y-1">
+              <div
+                class="mb-2 flex items-center gap-2 text-xs font-bold tracking-widest text-slate-400 uppercase"
+              >
+                คำตอบของคุณ
+              </div>
+              <div class="mono flex flex-col items-start gap-1">
+                <div class="flex items-center gap-1">
+                  <span class="w-12 text-xs text-slate-400">Carry</span>
+                  <div class="flex gap-1" data-row="carry"></div>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="w-12 text-xs text-slate-400">A</span>
+                  <div class="flex gap-1" data-row="a"></div>
+                </div>
+                <div class="relative flex items-center gap-1">
+                  <span class="w-12 text-xs text-slate-400">B</span>
+                  <div class="flex gap-1" data-row="b"></div>
+                  <span class="absolute -right-6 font-bold text-slate-400">+</span>
+                </div>
+                <div class="my-1 h-px w-full bg-slate-200"></div>
+                <div class="flex items-center gap-1">
+                  <span class="w-12 text-xs font-bold text-slate-700">Sum</span>
+                  <div class="flex gap-1" data-row="sum"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-1 opacity-40 transition-opacity duration-300 hover:opacity-100">
+              <div
+                class="mb-2 flex items-center gap-2 text-xs font-bold tracking-widest text-blue-500 uppercase"
+              >
+                เฉลยละเอียด
+              </div>
+              <div class="mono flex flex-col items-start gap-1">
+                <div class="flex items-center gap-1">
+                  <span class="w-12 text-xs text-slate-400">Carry</span>
+                  <div class="flex gap-1" data-row="ans-carry"></div>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="w-12 text-xs text-slate-400">A</span>
+                  <div class="flex gap-1" data-row="ans-a"></div>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="w-12 text-xs text-slate-400">B</span>
+                  <div class="flex gap-1" data-row="ans-b"></div>
+                </div>
+                <div class="my-1 h-px w-full bg-slate-100"></div>
+                <div class="flex items-center gap-1">
+                  <span class="w-12 text-xs font-bold text-blue-600">Sum</span>
+                  <div class="flex gap-1" data-row="ans-sum"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-50 pt-4">
+          <div data-sec="result" class="hidden rounded-full px-3 py-1 text-sm font-bold"></div>
+          <button
+            class="rounded-xl bg-blue-50 px-4 py-1.5 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-100"
+            data-step-btn
+          >
+            ดูวิธีทำทีละขั้น
+          </button>
+          <div class="flex gap-1">
+            <button
+              class="hidden rounded-xl bg-slate-100 px-3 py-1.5 text-xs text-slate-600"
+              data-prev-btn
+            >
+              กลับ
+            </button>
+            <button
+              class="hidden rounded-xl bg-slate-900 px-3 py-1.5 text-xs text-white"
+              data-next-btn
+            >
+              ถัดไป
+            </button>
+          </div>
+        </div>
+        <div class="relative mt-2" data-step-host></div>
+      </div>
+    </template>
+
+    <script>
+      // --- ปรับปรุงระบบ Auto-height เพื่อใช้งานใน Classroom ---
+      function sendHeight() {
+        const height = document.getElementById('content-wrapper').offsetHeight + 100
+        window.parent.postMessage(
+          {
+            type: 'iframe-height',
+            id: 'binary-add',
+            height: height,
+          },
+          '*',
+        )
+      }
+
+      // ส่งความสูงเมื่อมีการเปลี่ยนแปลงเนื้อหา
+      const resizeObserver = new ResizeObserver(() => sendHeight())
+      resizeObserver.observe(document.body)
+
+      // ส่งความสูงเริ่มต้น
+      window.onload = sendHeight
+
+      // --- Logic การคำนวณบวกเลขฐานสอง (คงเดิมแต่ปรับ UI) ---
+      const qs = (sel, el = document) => el.querySelector(sel)
+      const qsa = (sel, el = document) => [...el.querySelectorAll(sel)]
+      const toBin = (n, b) => n.toString(2).padStart(b, '0')
+      const clamp01 = (v) => (v === '1' ? '1' : v === '0' ? '0' : '')
+
+      function genPair(bits) {
+        const a = Math.floor(Math.random() * (Math.pow(2, bits) - 1))
+        const b = Math.floor(Math.random() * (Math.pow(2, bits) - 1))
+        return [a, b]
+      }
+
+      function compute(aBits, bBits) {
+        const n = aBits.length
+        const carry = new Array(n + 1).fill(0)
+        const sum = new Array(n).fill(0)
+        for (let i = n - 1; i >= 0; i--) {
+          const s = +aBits[i] + +bBits[i] + carry[i + 1]
+          sum[i] = s % 2
+          carry[i] = Math.floor(s / 2)
+        }
+        return { sum, carry }
+      }
+
+      function makeInput(role) {
+        const el = document.createElement('input')
+        el.type = 'text'
+        el.className = 'bitcell rounded-lg'
+        el.dataset.role = role
+        el.addEventListener('input', (e) => (e.target.value = clamp01(e.target.value)))
+        return el
+      }
+
+      function makeFixed(val, cls = '') {
+        const el = document.createElement('div')
+        el.className = 'bitcell flex items-center justify-center rounded-lg ' + cls
+        el.textContent = val
+        return el
+      }
+
+      function renderProblem(idx, bits) {
+        const container = qs('#problems')
+        const tpl = qs('#tplProblem')
+        const frag = tpl.content.cloneNode(true)
+        const root = frag.querySelector('.problem')
+        const [aDec, bDec] = genPair(bits)
+        const aB = toBin(aDec, bits).split('')
+        const bB = toBin(bDec, bits).split('')
+        const { sum, carry } = compute(aB, bB)
+
+        qs('.probNo', root).textContent = idx + 1
+        qs('.probId', root).textContent = Math.random().toString(36).substring(7).toUpperCase()
+        qs('.probHeaderContent', root).innerHTML = `(${aDec} + ${bDec})`
+
+        const rows = {
+          carry: qs('[data-row="carry"]', root),
+          a: qs('[data-row="a"]', root),
+          b: qs('[data-row="b"]', root),
+          sum: qs('[data-row="sum"]', root),
+          ansC: qs('[data-row="ans-carry"]', root),
+          ansA: qs('[data-row="ans-a"]', root),
+          ansB: qs('[data-row="ans-b"]', root),
+          ansS: qs('[data-row="ans-sum"]', root),
+        }
+
+        for (let i = 0; i < bits; i++) {
+          rows.carry.appendChild(makeInput('carry'))
+          rows.a.appendChild(makeFixed(aB[i], 'bg-slate-50'))
+          rows.b.appendChild(makeFixed(bB[i], 'bg-slate-50'))
+          rows.sum.appendChild(makeInput('sum'))
+
+          rows.ansC.appendChild(makeFixed(carry[i], 'bg-blue-50 text-blue-600 font-bold'))
+          rows.ansA.appendChild(makeFixed(aB[i], 'text-slate-400'))
+          rows.ansB.appendChild(makeFixed(bB[i], 'text-slate-400'))
+          rows.ansS.appendChild(makeFixed(sum[i], 'bg-emerald-50 text-emerald-600 font-bold'))
+        }
+
+        root.dataset.answer = sum.join('')
+        container.appendChild(frag)
+      }
+
+      function generate() {
+        qs('#problems').innerHTML = ''
+        qs('#scoreBox').classList.add('hidden')
+        const bits = +qs('#bits').value
+        const count = +qs('#count').value
+        for (let i = 0; i < count; i++) renderProblem(i, bits)
+      }
+
+      qs('#btnGen').onclick = generate
+      qs('#btnCheck').onclick = () => {
+        let score = 0
+        const problems = qsa('.problem')
+        problems.forEach((p) => {
+          const userSum = qsa('[data-role="sum"]', p)
+            .map((i) => i.value || '0')
+            .join('')
+          const isCorrect = userSum === p.dataset.answer
+          const resSec = qs('[data-sec="result"]', p)
+          resSec.textContent = isCorrect ? 'ถูกต้อง ✅' : 'ยังไม่ถูก ❌'
+          resSec.className = `inline-block px-3 py-1 rounded-full text-xs ${isCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`
+          resSec.classList.remove('hidden')
+          if (isCorrect) score++
+        })
+        const sb = qs('#scoreBox')
+        sb.textContent = `ยินดีด้วย! คุณทำได้ ${score}/${problems.length} คะแนน`
+        sb.classList.remove('hidden')
+      }
+
+      generate()
+    </script>
+  </body>
+</html>

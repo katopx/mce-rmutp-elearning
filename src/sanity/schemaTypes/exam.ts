@@ -120,6 +120,22 @@ export default defineType({
               of: [
                 {
                   type: 'object',
+                  preview: {
+                    select: {
+                      title: 'choiceText',
+                      isCorrect: 'isCorrect',
+                      media: 'choiceImage',
+                    },
+                    prepare(selection) {
+                      const { title, isCorrect, media } = selection
+                      return {
+                        title: title || 'ไม่มีข้อความ',
+                        // แสดงสถานะ ถูก/ผิด ใน Subtitle
+                        subtitle: isCorrect ? '✅' : '❌',
+                        media: media,
+                      }
+                    },
+                  },
                   fields: [
                     { name: 'choiceText', title: 'ข้อความตัวเลือก', type: 'string' },
                     { name: 'choiceImage', title: 'รูปภาพประกอบตัวเลือก', type: 'image' },
@@ -149,12 +165,22 @@ export default defineType({
             },
             prepare(selection: any) {
               const { title, type } = selection
-              const block = (title || []).find((b: any) => b._type === 'block')
+
+              // สร้าง Map สำหรับแปลงค่า Type เป็นภาษาไทยให้แอดมินอ่านง่าย
+              const typeMap: any = {
+                single: 'เลือกตอบข้อเดียว',
+                multiple: 'เลือกตอบหลายข้อ',
+                text: 'เติมคำ/อธิบาย',
+              }
+
+              // ล้าง Tag HTML (ถ้ามี) และตัดข้อความให้สั้นลงเพื่อความสวยงาม
+              const cleanTitle = title
+                ? title.replace(/<[^>]*>/g, '').substring(0, 100)
+                : 'ไม่มีเนื้อหาโจทย์'
+
               return {
-                title: block
-                  ? block.children.map((c: any) => c.text).join('')
-                  : 'ไม่มีเนื้อหาโจทย์',
-                subtitle: `รูปแบบ: ${type}`,
+                title: cleanTitle,
+                subtitle: `รูปแบบ: ${typeMap[type] || type}`,
               }
             },
           },
@@ -162,4 +188,19 @@ export default defineType({
       ],
     }),
   ],
+  preview: {
+    select: {
+      title: 'title',
+      questions: 'questions',
+      timeLimit: 'timeLimit',
+    },
+    prepare({ title, questions, timeLimit }) {
+      return {
+        title: title,
+        subtitle:
+          `ข้อสอบ: ${questions?.length || 0} ข้อ` + (timeLimit ? ` | เวลา: ${timeLimit} นาที` : ''),
+        icon: ClipboardCheck,
+      }
+    },
+  },
 })
