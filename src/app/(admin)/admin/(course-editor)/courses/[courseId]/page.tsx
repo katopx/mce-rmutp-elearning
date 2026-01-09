@@ -60,7 +60,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
             const parsed = JSON.parse(savedDraft)
             setCourseData({ ...data, ...parsed })
             setIsDirty(true)
-            toast.info('กู้คืนข้อมูลแบบร่างล่าสุดให้แล้ว')
+            toast.info('กู้คืนข้อมูลฉบับร่างล่าสุดให้แล้ว')
           } catch (e) {
             setCourseData(data)
           }
@@ -112,7 +112,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
       setCourseData(data)
       setIsDirty(false)
       localStorage.removeItem(STORAGE_KEY)
-      toast.success('ล้างแบบร่างและย้อนกลับข้อมูลปัจจุบันแล้ว', { id: toastId })
+      toast.success('ล้างฉบับร่างและย้อนกลับข้อมูลปัจจุบันแล้ว', { id: toastId })
     } else {
       toast.error('ไม่สามารถดึงข้อมูลใหม่ได้', { id: toastId })
     }
@@ -254,7 +254,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
           {/* ใส่ font-prompt ให้เข้าชุดกัน */}
           <AlertDialogHeader>
             <AlertDialogTitle className='text-xl font-bold text-red-600'>
-              ยืนยันการล้างแบบร่าง?
+              ยืนยันการล้างฉบับร่าง?
             </AlertDialogTitle>
             <AlertDialogDescription className='text-[15px] leading-relaxed'>
               คุณกำลังจะละทิ้งการแก้ไขทั้งหมดที่ยังไม่ได้บันทึก
@@ -268,7 +268,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
               onClick={handleDiscardDraft}
               className='rounded-lg bg-red-600 text-white hover:bg-red-700'
             >
-              ยืนยันการทิ้งแบบร่าง
+              ยืนยันการทิ้งฉบับร่าง
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -110,7 +110,10 @@ export function MultiSelectTrigger({
         role={props.role ?? 'combobox'}
         aria-expanded={props['aria-expanded'] ?? open}
         className={cn(
-          "border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[placeholder]:text-muted-foreground dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='text-'])]:text-muted-foreground flex h-auto min-h-9 w-fit items-center justify-between gap-2 overflow-hidden rounded-md border bg-transparent px-3 py-1.5 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+          'flex h-auto min-h-9 w-fit items-center justify-between gap-2 overflow-hidden rounded-md border border-slate-200 bg-transparent px-3 py-1.5 text-sm whitespace-nowrap shadow-sm transition-all outline-none hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50',
+          'focus-visible:border-slate-400 focus-visible:ring-0 focus-visible:ring-offset-0',
+          'aria-invalid:border-destructive aria-invalid:ring-0',
+          "data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-slate-400",
           className,
         )}
       >
@@ -185,14 +188,22 @@ export function MultiSelectValue({
   )
 
   if (selectedValues.size === 0 && placeholder) {
-    return <span className='text-muted-foreground min-w-0 overflow-hidden font-normal'>{placeholder}</span>
+    return (
+      <span className='text-muted-foreground min-w-0 overflow-hidden font-normal'>
+        {placeholder}
+      </span>
+    )
   }
 
   return (
     <div
       {...props}
       ref={handleResize}
-      className={cn('flex w-full gap-1.5 overflow-hidden', shouldWrap && 'h-full flex-wrap', className)}
+      className={cn(
+        'flex w-full gap-1.5 overflow-hidden',
+        shouldWrap && 'h-full flex-wrap',
+        className,
+      )}
     >
       {[...selectedValues]
         .filter((value) => items.has(value))
@@ -200,7 +211,7 @@ export function MultiSelectValue({
           <Badge
             variant='outline'
             data-selected-item
-            className='group flex items-center gap-1'
+            className='group flex items-center gap-1 border-slate-200 bg-slate-50 font-normal text-slate-700 hover:bg-slate-100'
             key={value}
             onClick={
               clickToRemove
@@ -212,7 +223,9 @@ export function MultiSelectValue({
             }
           >
             {items.get(value)}
-            {clickToRemove && <XIcon className='text-muted-foreground group-hover:text-destructive size-2' />}
+            {clickToRemove && (
+              <XIcon className='text-muted-foreground group-hover:text-destructive size-2' />
+            )}
           </Badge>
         ))}
       <Badge
@@ -248,12 +261,18 @@ export function MultiSelectContent({
       <PopoverContent className='min-w-[var(--radix-popover-trigger-width)] p-0'>
         <Command {...props}>
           {canSearch ? (
-            <CommandInput placeholder={typeof search === 'object' ? search.placeholder : undefined} />
+            <CommandInput
+              placeholder={typeof search === 'object' ? search.placeholder : undefined}
+            />
           ) : (
             <button autoFocus className='sr-only' />
           )}
           <CommandList>
-            {canSearch && <CommandEmpty>{typeof search === 'object' ? search.emptyMessage : undefined}</CommandEmpty>}
+            {canSearch && (
+              <CommandEmpty>
+                {typeof search === 'object' ? search.emptyMessage : undefined}
+              </CommandEmpty>
+            )}
             {children}
           </CommandList>
         </Command>
@@ -286,8 +305,14 @@ export function MultiSelectItem({
         toggleValue(value)
         onSelect?.(value)
       }}
+      className={cn(
+        "cursor-pointer transition-colors data-[selected='true']:bg-slate-100 data-[selected='true']:text-slate-900",
+        props.className,
+      )}
     >
-      <CheckIcon className={cn('mr-2 size-4', isSelected ? 'opacity-100' : 'opacity-0')} />
+      <CheckIcon
+        className={cn('mr-2 size-4 text-slate-600', isSelected ? 'opacity-100' : 'opacity-0')}
+      />
       {children}
     </CommandItem>
   )
@@ -309,7 +334,10 @@ function useMultiSelectContext() {
   return context
 }
 
-function debounce<T extends (...args: never[]) => void>(func: T, wait: number): (...args: Parameters<T>) => void {
+function debounce<T extends (...args: never[]) => void>(
+  func: T,
+  wait: number,
+): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null
   return function (this: unknown, ...args: Parameters<T>) {
     if (timeout) clearTimeout(timeout)

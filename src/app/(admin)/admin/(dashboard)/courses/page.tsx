@@ -8,14 +8,17 @@ import { getCourseDifficulty } from '@/constants/course'
 import { getAllCoursesAction } from '@/lib/sanity/course-actions'
 import {
   Award,
+  BarChart3,
+  Eye,
   FileEdit,
   Globe,
-  MoreHorizontal,
+  MoreVertical,
   Pencil,
   Plus,
   Search,
   Star,
   Trash2,
+  Users,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
@@ -24,8 +27,6 @@ import { toast } from 'sonner'
 export default function AdminCoursesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all')
-
-  // --- ข้อมูลจริงจาก Sanity ---
   const [courses, setCourses] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -34,7 +35,6 @@ export default function AdminCoursesPage() {
       try {
         setIsLoading(true)
         const data = await getAllCoursesAction()
-        console.log('Raw Data:', data)
         setCourses(data || [])
       } catch (err) {
         toast.error('ไม่สามารถโหลดข้อมูลได้')
@@ -55,180 +55,168 @@ export default function AdminCoursesPage() {
     })
   }, [courses, searchQuery, statusFilter])
 
-  if (isLoading) {
-    return <Loading />
-  }
+  if (isLoading) return <Loading />
 
   return (
-    <div className='space-y-8 p-6'>
+    <div className='flex h-full flex-col bg-white'>
       {/* Header Section */}
-      <div className='flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between'>
-        <div className='space-y-1'>
-          <h1 className='text-2xl leading-normal font-semibold text-slate-900'>คลังหลักสูตร</h1>
-          <p className='text-base leading-normal font-normal text-slate-500'>
-            ติดตามประสิทธิภาพการเรียนและคะแนนสอบของผู้เรียน
-          </p>
+      <div className='border-b border-slate-200 px-8 py-6'>
+        <div className='mb-6 flex items-center justify-between'>
+          <h1 className='text-xl font-bold text-slate-900'>เนื้อหาของช่อง (หลักสูตร)</h1>
+          <Link href='/admin/courses/create'>
+            <Button className='rounded-md bg-blue-600 text-white hover:bg-blue-700'>
+              <Plus className='mr-2 size-4' /> สร้างใหม่
+            </Button>
+          </Link>
         </div>
-        <Link href='/admin/courses/create'>
-          <Button className='h-11 shrink-0 cursor-pointer gap-2 rounded-xl bg-blue-600 px-6 text-white shadow-sm transition-all hover:bg-blue-700'>
-            <Plus className='!size-5' />
-            <span className='font-medium'>สร้างหลักสูตรด่วน</span>
-          </Button>
-        </Link>
-      </div>
 
-      {/* Filter Bar */}
-      <div className='flex flex-col gap-4 md:flex-row'>
-        <div className='group relative flex-1'>
-          <Search className='absolute top-1/2 left-3 !size-4 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600' />
-          <Input
-            placeholder='ค้นหาชื่อหลักสูตร...'
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className='h-10 rounded-xl border-slate-200 bg-white pl-10 text-base outline-none'
-          />
-        </div>
-        <div className='flex shrink-0 gap-2 overflow-x-auto pb-1'>
-          {(['all', 'published', 'draft'] as const).map((s) => (
+        {/* Filters - YouTube Style Tab Bar */}
+        <div className='-mb-6 flex items-center gap-8 border-b border-slate-100'>
+          {(
+            [
+              { id: 'all', label: 'ทั้งหมด' },
+              { id: 'published', label: 'เผยแพร่' },
+              { id: 'draft', label: 'ฉบับร่าง' },
+            ] as const
+          ).map((tab) => (
             <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`cursor-pointer rounded-xl px-4 py-2 text-sm font-medium whitespace-nowrap transition-all ${
-                statusFilter === s
-                  ? 'border border-blue-100 bg-blue-50 text-blue-600'
-                  : 'text-slate-500 hover:bg-slate-50'
+              key={tab.id}
+              onClick={() => setStatusFilter(tab.id)}
+              className={`relative pb-3 text-sm font-medium transition-all ${
+                statusFilter === tab.id ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              {s === 'all' ? 'ทั้งหมด' : s === 'published' ? 'เผยแพร่แล้ว' : 'ฉบับร่าง'}
+              {tab.label}
+              {statusFilter === tab.id && (
+                <div className='absolute right-0 bottom-0 left-0 h-0.5 bg-blue-600' />
+              )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Course Cards */}
-      <div className='grid grid-cols-1 gap-6 xl:grid-cols-2'>
-        {filteredCourses.length > 0 ? (
-          filteredCourses.map((course) => (
-            <div
-              key={course._id}
-              className='group flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white transition-all hover:border-blue-200 hover:shadow-md sm:flex-row'
-            >
-              {/* Thumbnail Area */}
-              <div className='relative aspect-video w-full shrink-0 overflow-hidden bg-slate-100 sm:aspect-auto sm:w-64'>
-                <img
-                  src={course.image || '/placeholder-course.jpg'}
-                  alt={course.title}
-                  className='h-full w-full object-cover transition-transform duration-500 group-hover:scale-105'
-                />
-                <div className='absolute top-3 left-3 flex flex-col gap-2'>
-                  {course.status === 'published' ? (
-                    <Badge className='border-0 bg-green-500/90 py-0.5 text-[10px] font-medium text-white'>
-                      <Globe className='mr-1 size-3' /> เผยแพร่
-                    </Badge>
-                  ) : (
-                    <Badge className='border-0 bg-slate-500/90 py-0.5 text-[10px] font-medium text-white'>
-                      <FileEdit className='mr-1 size-3' /> ฉบับร่าง
-                    </Badge>
-                  )}
-                </div>
-              </div>
+      {/* Search & Action Bar */}
+      <div className='flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-8 py-4'>
+        <div className='relative w-full max-w-md'>
+          <Search className='absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400' />
+          <input
+            type='text'
+            placeholder='กรองหลักสูตร...'
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className='w-full bg-transparent py-2 pr-4 pl-10 text-sm focus:outline-none'
+          />
+        </div>
+        <div className='text-xs text-slate-400'>แสดง {filteredCourses.length} รายการ</div>
+      </div>
 
-              {/* Content Area */}
-              <div className='flex min-w-0 flex-1 flex-col p-5'>
-                <div className='mb-2 flex items-start justify-between gap-2'>
-                  <h3
-                    className='truncate text-lg leading-normal font-semibold text-slate-800'
-                    title={course.title}
-                  >
-                    {course.title}
-                  </h3>
-                  <div className='flex shrink-0 items-center gap-1 rounded-lg bg-amber-50 px-2 py-0.5 text-amber-500'>
-                    <Star className='size-3.5 fill-current' />
-                    <span className='text-xs font-bold'>{course.rating?.toFixed(1) || '0.0'}</span>
+      {/* Content Table */}
+      <div className='flex-1 overflow-auto'>
+        <table className='w-full border-collapse text-left'>
+          <thead>
+            <tr className='sticky top-0 z-10 border-b border-slate-200 bg-white text-[13px] font-medium tracking-wider text-slate-500 uppercase'>
+              <th className='px-8 py-3 font-medium'>หลักสูตร</th>
+              <th className='px-4 py-3 font-medium'>การมองเห็น</th>
+              <th className='px-4 py-3 font-medium'>วันที่สร้าง</th>
+              <th className='px-4 py-3 font-medium'>ผู้เรียน</th>
+              <th className='px-4 py-3 font-medium'>คะแนน</th>
+              <th className='px-8 py-3 text-right font-medium'>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody className='divide-y divide-slate-100'>
+            {filteredCourses.map((course) => (
+              <tr key={course._id} className='group transition-colors hover:bg-slate-50/80'>
+                {/* Course Info */}
+                <td className='px-8 py-4'>
+                  <div className='flex items-center gap-4'>
+                    <div className='relative aspect-video w-32 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100'>
+                      <img
+                        src={course.image || '/placeholder-course.jpg'}
+                        className='h-full w-full object-cover'
+                        alt=''
+                      />
+                    </div>
+                    <div className='flex min-w-0 flex-col'>
+                      <span className='truncate text-sm font-semibold text-slate-900 transition-colors group-hover:text-blue-600'>
+                        {course.title}
+                      </span>
+                      <span className='mt-1 line-clamp-1 text-xs text-slate-500'>
+                        {course.instructor?.name || 'ไม่ระบุ'}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </td>
 
-                {/* Instructor */}
-                <div className='mb-5 flex items-center gap-2'>
-                  {course.Instructor?.image ? (
-                    <img
-                      src={course.instructor.image}
-                      className='size-7 rounded-full border-2 border-white bg-slate-200 object-cover shadow-sm'
-                      alt={course.instructor.name}
-                    />
+                {/* Visibility */}
+                <td className='px-4 py-4'>
+                  {course.status === 'published' ? (
+                    <div className='flex items-center gap-2 text-green-600'>
+                      <Globe className='size-4' />
+                      <span className='text-sm'>สาธารณะ</span>
+                    </div>
                   ) : (
-                    <div className='flex size-7 items-center justify-center rounded-full border-2 border-white bg-slate-100 text-[10px] font-bold text-slate-500'>
-                      {course.instructor?.name?.charAt(0) || 'I'}
+                    <div className='flex items-center gap-2 text-slate-400'>
+                      <FileEdit className='size-4' />
+                      <span className='text-sm'>ฉบับร่าง</span>
                     </div>
                   )}
-                  <span className='text-xs text-slate-500'>
-                    ผู้สอน: {course.instructor?.name || 'ไม่ระบุ'}
-                  </span>
-                </div>
+                </td>
 
-                {/* Statistics Grid (ปรับให้เข้ากับฟิลด์จริง) */}
-                <div className='mb-4 grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border-y border-slate-50 bg-slate-50/30 px-3 py-4'>
-                  <div className='flex flex-col'>
-                    <span className='text-[11px] font-medium tracking-tight text-slate-400 uppercase'>
-                      ลงทะเบียนเรียน
-                    </span>
-                    <span className='text-base font-semibold text-slate-700'>
-                      {course.registered || 0}{' '}
-                      <span className='text-xs font-normal text-slate-400'>คน</span>
-                    </span>
-                  </div>
-                  <div className='flex flex-col'>
-                    <span className='text-[11px] font-medium tracking-tight text-slate-400 uppercase'>
-                      ระดับ
-                    </span>
-                    <span className='text-base font-semibold text-blue-600'>
-                      {getCourseDifficulty(course.difficulty).label || 'ไม่ระบุ'}
-                    </span>
-                  </div>
-                  <div className='flex flex-col'>
-                    <span className='text-[11px] font-medium tracking-tight text-slate-400 uppercase'>
-                      หมวดหมู่
-                    </span>
-                    <span className='truncate text-sm font-semibold text-slate-700'>
-                      {course.category?.[0] || 'ไม่ระบุ'}
-                    </span>
-                  </div>
-                  <div className='flex flex-col'>
-                    <span className='text-[11px] font-medium tracking-tight text-slate-400 uppercase'>
-                      คะแนนสอบเฉลี่ย
-                    </span>
-                    <span className='flex items-center gap-1 text-base font-semibold text-purple-600'>
-                      <Award className='size-3.5' />
-                      0.0 / 100
-                    </span>
-                  </div>
-                </div>
+                {/* Date */}
+                <td className='px-4 py-4 text-sm text-slate-600'>{course._createdAt || '-'}</td>
 
-                {/* Footer Actions */}
-                <div className='mt-auto flex items-center justify-between pt-1'>
-                  <div className='flex gap-5'>
-                    {/* ลิงก์ไปยังหน้า Editor พร้อมส่ง ID คอร์สจริงไป */}
-                    <Link
-                      href={`/admin/courses/${course._id}`}
-                      className='flex cursor-pointer items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-blue-600'
-                    >
-                      <Pencil className='size-4' /> แก้ไข
+                {/* Registered Count */}
+                <td className='px-4 py-4'>
+                  <div className='flex flex-col'>
+                    <span className='text-sm font-medium text-slate-700'>
+                      {course.registered || 0}
+                    </span>
+                    <span className='text-[10px] text-slate-400'>คน</span>
+                  </div>
+                </td>
+
+                {/* Rating */}
+                <td className='px-4 py-4'>
+                  <div className='flex items-center gap-1 text-sm font-medium text-amber-500'>
+                    <Star className='size-3.5 fill-current' />
+                    {course.rating?.toFixed(1) || '0.0'}
+                  </div>
+                </td>
+
+                {/* Actions */}
+                <td className='px-8 py-4 text-right'>
+                  <div className='flex items-center justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100'>
+                    <Link href={`/admin/courses/${course._id}`}>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='size-8 text-slate-600 hover:text-blue-600'
+                      >
+                        <Pencil className='size-4' />
+                      </Button>
                     </Link>
-                    <button className='flex cursor-pointer items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-red-600'>
-                      <Trash2 className='size-4' /> ลบ
-                    </button>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='size-8 text-slate-600 hover:text-blue-600'
+                    >
+                      <BarChart3 className='size-4' />
+                    </Button>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='size-8 text-slate-600 hover:text-red-600'
+                    >
+                      <Trash2 className='size-4' />
+                    </Button>
                   </div>
-                  <button className='cursor-pointer rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-50'>
-                    <MoreHorizontal className='size-5' />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className='col-span-full py-20 text-center text-slate-400'>
-            ไม่พบหลักสูตรที่ตรงตามเงื่อนไข
-          </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {filteredCourses.length === 0 && (
+          <div className='py-20 text-center text-sm text-slate-400'>ไม่พบข้อมูลหลักสูตร</div>
         )}
       </div>
     </div>

@@ -52,12 +52,14 @@ export async function getOrCreateInstructor(email: string, name: string) {
       // สร้าง slug พื้นฐานเพื่อให้ระบบ link ไปหน้า profile ได้ไม่พัง
       slug: {
         _type: 'slug',
-        current:
-          instructorName.toLowerCase().replace(/\s+/g, '-') +
-          '-' +
-          Math.floor(Math.random() * 1000),
+        current: instructorName
+          .toLowerCase()
+          .replace(/[^a-z0-9ก-๙\s-]/gi, '')
+          .replace(/[\s-]+/g, '-')
+          .replace(/^-|-$/g, '')
+          .slice(0, 96),
       },
-      role: 'Instructor',
+      jobPosition: 'Instructor',
     })
 
     console.log(`✅ Created new instructor: ${instructorName} (${cleanEmail})`)

@@ -14,14 +14,22 @@ interface TextEditorProps {
   content?: string
   onChange?: (content: string) => void
   placeholder?: string
+  height?: number
+  width?: number
 }
 
-export default function TextEditor({ content, onChange, placeholder }: TextEditorProps) {
+export default function TextEditor({
+  content,
+  onChange,
+  placeholder,
+  height = 500,
+}: TextEditorProps) {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const config = useMemo(
     () => ({
       readonly: false,
-      height: 500,
+      height: height,
+      minHeight: 150,
       placeholder: placeholder || 'เริ่มพิมพ์เนื้อหา...',
       toolbarSticky: false,
       enableDragAndDropFileToEditor: false,
@@ -75,7 +83,7 @@ export default function TextEditor({ content, onChange, placeholder }: TextEdito
       processPasteFromWord: true,
       beautifyHTML: false,
     }),
-    [placeholder],
+    [placeholder, height],
   )
 
   return (

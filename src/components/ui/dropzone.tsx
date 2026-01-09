@@ -419,8 +419,8 @@ const DropZoneArea = forwardRef<HTMLDivElement, DropZoneAreaProps>(
         {...props}
         aria-label='dropzone'
         className={cn(
-          'border-input bg-background ring-offset-background focus-visible:ring-ring flex items-center justify-center rounded-md border px-4 py-2 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
-          context.isDragActive && 'animate-pulse bg-black/5',
+          'border-input flex items-center justify-center rounded-md border transition-all outline-none',
+          context.isDragActive && 'border-slate-400 bg-slate-100/50',
           context.isInvalid && 'border-destructive',
           className,
         )}
@@ -674,7 +674,7 @@ const DropzoneTrigger = forwardRef<HTMLLabelElement, DropzoneTriggerProps>(
         ref={ref}
         {...props}
         className={cn(
-          'bg-secondary ring-offset-background hover:bg-secondary/80 has-[input:focus-visible]:ring-ring cursor-pointer rounded-sm px-4 py-2 font-medium transition-colors focus-within:outline-none has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-offset-2',
+          'relative block w-full cursor-pointer rounded-md transition-colors focus-within:outline-none',
           className,
         )}
       >

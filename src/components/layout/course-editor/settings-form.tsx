@@ -31,16 +31,16 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { checkSlugAction, updateCourseAction } from '@/lib/sanity/course-actions'
+import { cn } from '@/lib/utils'
 import * as Icons from 'lucide-react'
 import {
   CheckCircle2,
-  ImageIcon,
   Loader2,
   Plus,
   Save,
   Search,
   Trash2,
-  X,
+  UploadCloud,
   XCircle,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -409,12 +409,7 @@ export default function CourseSettingsForm({
                 </Button>
               </div>
             ))}
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={addObjective}
-              className='w-full border-dashed'
-            >
+            <Button variant='outline' size='sm' onClick={addObjective} className='w-full'>
               <Plus className='mr-2 size-4' /> เพิ่มวัตถุประสงค์
             </Button>
           </div>
@@ -464,7 +459,7 @@ export default function CourseSettingsForm({
           <div className='space-y-2'>
             <Label className='text-sm font-medium'>ระยะเวลาในการเรียนหลักสูตร</Label>
             <Input
-              className='bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none'
+              className='bg-background cursor-pointer appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none'
               type='time'
               value={totalDuration}
               onChange={(e) => setTotalDuration(e.target.value)}
@@ -501,7 +496,7 @@ export default function CourseSettingsForm({
                     type='button'
                     variant='outline'
                     size='icon'
-                    className='h-10 w-10 transition-colors hover:border-blue-500 hover:text-blue-500'
+                    className='h-10 w-10 transition-colors hover:text-white'
                   >
                     <Plus className='size-4' />
                   </Button>
@@ -645,7 +640,7 @@ export default function CourseSettingsForm({
               ระดับ <span className='text-red-500'>*</span>
             </Label>
             <Select value={difficulty} onValueChange={setDifficulty}>
-              <SelectTrigger className='w-full text-sm'>
+              <SelectTrigger className='w-full cursor-pointer text-sm'>
                 <SelectValue placeholder='เลือกระดับความยาก' />
               </SelectTrigger>
               <SelectContent>
@@ -659,36 +654,53 @@ export default function CourseSettingsForm({
           </div>
 
           {/* รูปภาพหน้าปก */}
-          <div className='space-y-2'>
-            <Label>ภาพหน้าปกหลักสูตร</Label>
+          <div className='space-y-2.5'>
+            <Label className='font-medium text-slate-700'>ภาพหน้าปกหลักสูตร</Label>
             <Dropzone {...dropzone}>
-              <DropZoneArea className='hover:border-primary/50 relative overflow-hidden rounded-xl border-2 border-dashed transition-colors'>
-                <DropzoneTrigger className='w-full'>
+              <DropZoneArea
+                className={cn(
+                  'relative overflow-hidden rounded-xl border-2 border-dashed transition-all duration-200',
+                  currentImageUrl
+                    ? 'border-slate-200 bg-white'
+                    : 'border-slate-300 bg-slate-50/50 hover:border-slate-400 hover:bg-slate-50',
+                )}
+              >
+                <DropzoneTrigger className='w-full outline-none'>
                   {currentImageUrl ? (
-                    <div className='group relative aspect-video w-full'>
+                    <div className='group relative aspect-video w-full overflow-hidden'>
                       <img
                         src={currentImageUrl}
                         alt='Preview'
-                        className='h-full w-full object-cover'
+                        className='h-full w-full object-cover transition-transform duration-500 group-hover:scale-105'
                       />
-                      <div className='absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100'>
-                        <Button
-                          type='button'
-                          variant='destructive'
-                          size='sm'
-                          onClick={handleRemoveFile}
-                          className='z-50'
-                        >
-                          <X className='mr-2 h-4 w-4' /> ลบรูป
-                        </Button>
+                      {/* Overlay เมื่อ Hover */}
+                      <div className='absolute inset-0 flex items-center justify-center bg-slate-900/40 opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover:opacity-100'>
+                        <div className='flex flex-col gap-2'>
+                          <Button
+                            type='button'
+                            variant='destructive'
+                            size='sm'
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRemoveFile(e)
+                            }}
+                            className='h-9 rounded-full'
+                          >
+                            <Trash2 className='mr-2 h-4 w-4' /> ลบรูปภาพ
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className='flex flex-col items-center justify-center p-10 text-center'>
-                      <ImageIcon className='mb-2 h-10 w-10 text-slate-400' />
-                      <p className='text-sm text-slate-500'>อัปโหลดรูปภาพหน้าปกหลักสูตร</p>
-                      <p className='text-muted-foreground text-xs'>
-                        ลากไฟล์มาวาง หรือคลิกเพื่อเลือก (รองรับ JPG, PNG ขนาดไม่เกิน 5MB)
+                    <div className='flex cursor-pointer flex-col items-center justify-center px-6 py-12 text-center'>
+                      <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-slate-100 bg-white text-slate-400 shadow-sm'>
+                        <UploadCloud className='h-8 w-8' />
+                      </div>
+                      <p className='text-sm font-semibold text-slate-700'>
+                        คลิกเพื่ออัปโหลด หรือลากไฟล์มาวาง
+                      </p>
+                      <p className='mt-1 text-xs text-slate-500'>
+                        รองรับ JPG, PNG หรือ WebP (แนะนำขนาด 16:9 ไม่เกิน 5MB)
                       </p>
                     </div>
                   )}

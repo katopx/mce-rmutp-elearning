@@ -75,7 +75,7 @@ export default function CorseEditorHeader({
                 {lastSavedTime && (
                   <span className='mt-1 flex items-center gap-1 text-[10px] font-normal text-slate-400'>
                     <Clock size={10} />
-                    บันทึกแบบร่างเมื่อ{' '}
+                    บันทึกฉบับร่างเมื่อ{' '}
                     {lastSavedTime.toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit',
@@ -134,19 +134,19 @@ export default function CorseEditorHeader({
           <button
             onClick={() => onTogglePublish?.(false)}
             className={cn(
-              'flex items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium transition-all',
+              'flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium transition-all',
               !isPublished
                 ? 'bg-white text-slate-700 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700',
             )}
           >
             <FileEdit size={13} />
-            แบบร่าง
+            ฉบับร่าง
           </button>
           <button
             onClick={() => onTogglePublish?.(true)}
             className={cn(
-              'flex items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium transition-all',
+              'flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium transition-all',
               isPublished
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-700',
