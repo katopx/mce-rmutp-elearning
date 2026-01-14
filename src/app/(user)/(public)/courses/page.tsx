@@ -2,6 +2,7 @@ import { client } from '@/sanity/lib/client'
 import { formatDuration } from '@/utils/format'
 import { BookOpen, Clock, ImageIcon, RotateCcw, User } from 'lucide-react'
 import Link from 'next/link'
+export const dynamic = 'force-dynamic'
 
 async function showCourses() {
   const query = `*[_type == "course" && status == "published"] | order(_createdAt desc) {
