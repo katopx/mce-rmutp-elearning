@@ -10,7 +10,7 @@ const data = {
   navMain: [
     {
       title: 'หน้าแรก',
-      url: '/',
+      url: '/courses',
       icon: House,
       isActive: true,
     },
