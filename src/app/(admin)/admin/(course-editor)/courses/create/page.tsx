@@ -66,7 +66,7 @@ export default function CreateCoursePage() {
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [shortDescription, setShortDescription] = useState('')
-  const [level, setLevel] = useState('')
+  const [difficulty, setDifficulty] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
 
   const [categories, setCategories] = useState<{ value: string; label: string }[]>([])
@@ -168,7 +168,7 @@ export default function CreateCoursePage() {
     }
     if (!shortDescription.trim()) return toast.error('กรุณากรอกคำอธิบายหลักสูตร')
     if (selectedCategories.length === 0) return toast.error('กรุณาเลือกอย่างน้อย 1 หมวดหมู่')
-    if (!level) return toast.error('กรุณาเลือกระดับความยากของหลักสูตร')
+    if (!difficulty) return toast.error('กรุณาเลือกระดับความยากของหลักสูตร')
     if (!imageFile) return toast.error('กรุณาอัปโหลดรูปภาพหน้าปกหลักสูตร')
 
     if (!user?.email) return toast.error('ไม่พบข้อมูลผู้ใช้งาน กรุณา Login ใหม่')
@@ -179,7 +179,7 @@ export default function CreateCoursePage() {
       formData.append('title', title)
       formData.append('slug', slug)
       formData.append('shortDescription', shortDescription)
-      formData.append('level', level)
+      formData.append('difficulty', difficulty)
       formData.append('image', imageFile)
 
       formData.append('creatorEmail', user.email)
@@ -551,7 +551,7 @@ export default function CreateCoursePage() {
             <Label className='text-sm font-medium'>
               ระดับ <span className='text-red-500'>*</span>
             </Label>
-            <Select value={level} onValueChange={setLevel}>
+            <Select value={difficulty} onValueChange={setDifficulty}>
               <SelectTrigger className='w-full text-sm'>
                 <SelectValue placeholder='เลือกระดับความยาก' />
               </SelectTrigger>

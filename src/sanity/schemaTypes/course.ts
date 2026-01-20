@@ -10,6 +10,7 @@ export default defineType({
   groups: [
     { name: 'general', title: 'ข้อมูลเบื้องต้น' },
     { name: 'detail', title: 'รายละเอียดหลักสูตร' },
+    { name: 'assessment', title: 'การวัดผล' },
     { name: 'content', title: 'เนื้อหาหลักสูตร' },
     { name: 'stats', title: 'สถิติ' },
     { name: 'references', title: 'การเชื่อมโยง' },
@@ -198,6 +199,56 @@ export default defineType({
       ],
     }),
 
+    // --- Assessment Group (Pre/Post Test) ---
+    defineField({
+      name: 'enableAssessment',
+      title: 'เปิดใช้งานระบบวัดผล (Enable Assessment)',
+      description: 'กำหนดว่าหลักสูตรนี้จะมีการสอบวัดผล (Pre-test / Post-test) หรือไม่',
+      type: 'boolean',
+      initialValue: false, // ค่าเริ่มต้นเป็นปิด
+      group: 'assessment',
+    }),
+
+    defineField({
+      name: 'examRef',
+      title: 'ชุดข้อสอบที่ใช้ประเมินผล',
+      description: 'เลือกชุดข้อสอบจากคลัง เพื่อใช้เป็นทั้ง Pre-test และ Post-test',
+      type: 'reference',
+      group: 'assessment',
+      to: [{ type: 'exam' }], // อ้างอิงไปที่ Schema Exam ของคุณ
+      hidden: ({ parent }) => !parent?.enableAssessment,
+    }),
+    defineField({
+      name: 'assessmentConfig',
+      title: 'ตั้งค่าการสอบ',
+      type: 'object',
+      group: 'assessment',
+      fields: [
+        {
+          name: 'enablePreTest',
+          title: 'เปิดใช้งานสอบก่อนเรียน (Pre-test)',
+          type: 'boolean',
+          initialValue: true,
+        },
+        {
+          name: 'enablePostTest',
+          title: 'เปิดใช้งานสอบหลังเรียน (Post-test)',
+          type: 'boolean',
+          initialValue: true,
+        },
+        {
+          name: 'passingScore',
+          title: 'เกณฑ์คะแนนผ่าน (%) (สำหรับ Post-test)',
+          type: 'number',
+          initialValue: 60,
+          validation: (Rule) => Rule.min(0).max(100),
+          hidden: ({ parent }) => !parent?.enablePostTest,
+        },
+      ],
+      // ซ่อน settings ถ้ายังไม่ได้เลือกชุดข้อสอบ
+      hidden: ({ document }) => !document?.enableAssessment || !document?.examRef,
+    }),
+
     // Content Group Fields
     defineField({
       name: 'modules',
@@ -246,7 +297,7 @@ export default defineType({
                           { title: '🎬 บทเรียนวิดีโอ', value: 'video' },
                           { title: '📄 บทเรียนเนื้อหา', value: 'article' },
                           { title: '📝 แบบฝึกหัด', value: 'exercise' },
-                          { title: '📝 แบบทดสอบ', value: 'assessment' },
+                          //{ title: '📝 แบบทดสอบ', value: 'assessment' }
                         ],
                         layout: 'radio',
                       },
@@ -418,13 +469,13 @@ export default defineType({
                     },
 
                     // --- Assessment (อ้างอิงจากคลังข้อสอบ exam.ts - Reference exam.ts) ---
-                    {
-                      name: 'assessmentReference',
-                      title: 'เลือกแบบทดสอบจากคลัง',
-                      type: 'reference',
-                      to: [{ type: 'exam' }],
-                      hidden: ({ parent }) => parent?.lessonType !== 'assessment',
-                    },
+                    // { ไมไ่ด้ใช้ตอนนี้
+                    //   name: 'assessmentReference',
+                    //   title: 'เลือกแบบทดสอบจากคลัง',
+                    //   type: 'reference',
+                    //   to: [{ type: 'exam' }],
+                    //   hidden: ({ parent }) => parent?.lessonType !== 'assessment',
+                    // },
 
                     // --- ระบุความยาวบทเรียน (นาที) ---
                     {
@@ -460,7 +511,7 @@ export default defineType({
                         video: '🎬 Video',
                         article: '📄 Article',
                         exercise: '📝 Exercise',
-                        assessment: '📝 Assessment',
+                        //assessment: '📝 Assessment',
                       }
                       let subtitleInfo = icons[lessonType] || 'Unknown'
 

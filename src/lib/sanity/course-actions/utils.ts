@@ -69,3 +69,51 @@ export async function getOrCreateInstructor(email: string, name: string) {
     throw new Error('ระบบไม่สามารถระบุตัวตนผู้สอนได้')
   }
 }
+
+// 1. สร้าง Exam ใหม่ และผูกเข้ากับ Course ทันที
+export async function createAndLinkExamAction(courseId: string, title: string) {
+  try {
+    // 1.1 สร้างเอกสาร Exam
+    const newExam = await adminClient.create({
+      _type: 'exam',
+      title: title,
+      questions: [], // เริ่มต้นเป็น array ว่าง
+      settings: {
+        timeLimit: 0,
+        passingScore: 60,
+        maxAttempts: 0,
+        shuffleQuestions: false,
+      },
+    })
+
+    // 1.2 ผูกเข้ากับ Course และเปิด Switch enableAssessment
+    await adminClient
+      .patch(courseId)
+      .set({
+        enableAssessment: true, // เปิดสวิตช์หลัก
+        examRef: { _type: 'reference', _ref: newExam._id }, // ผูก Reference
+      })
+      .commit()
+
+    return { success: true, examId: newExam._id }
+  } catch (error) {
+    console.error('Create Exam Error:', error)
+    return { success: false, error: 'ไม่สามารถสร้างข้อสอบได้' }
+  }
+}
+
+// 2. ลบการเชื่อมโยง (Unlink)
+export async function unlinkExamAction(courseId: string) {
+  try {
+    await adminClient
+      .patch(courseId)
+      .set({ enableAssessment: false }) // ปิดสวิตช์
+      .unset(['examRef']) // ลบ Reference ออก
+      .commit()
+
+    return { success: true }
+  } catch (error) {
+    console.error('Unlink Exam Error:', error)
+    return { success: false, error: 'ไม่สามารถลบการเชื่อมโยงได้' }
+  }
+}

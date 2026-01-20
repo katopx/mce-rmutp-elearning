@@ -1,8 +1,8 @@
 import { client } from '@/sanity/lib/client'
 import { validateSlug } from '@/utils/format'
+import { groq } from 'next-sanity'
 import { notFound } from 'next/dist/client/components/not-found'
 import ClassroomClient from './ClassroomClient'
-import { groq } from 'next-sanity'
 
 async function getCourseClassroom(slug: string) {
   const query = groq`*[_type == "course" && slug.current == $slug && status == "published"][0] {
@@ -10,6 +10,9 @@ async function getCourseClassroom(slug: string) {
     title,
     "slug": slug.current,
         
+    enableAssessment,
+    examRef,
+    
     // โครงสร้างบทเรียน
     modules[] {
       _key,

@@ -1,6 +1,7 @@
 'use server'
 
 import { adminClient } from '@/sanity/lib/admin-client'
+import { groq } from 'next-sanity'
 
 // สร้างชุดข้อสอบใหม่ (Auto-create)
 export async function createNewExamAction(title: string) {
@@ -20,31 +21,22 @@ export async function createNewExamAction(title: string) {
 }
 
 // อัปเดตเฉพาะคำถามในชุดข้อสอบ
-export async function updateExamQuestionsAction(id: string, questions: any[]) {
+export async function updateExamDataAction(examId: string, data: any) {
   try {
-    await adminClient.patch(id).set({ questions }).commit()
-    return { success: true }
-  } catch (error) {
-    console.error('Error updating questions:', error)
-    return { success: false }
-  }
-}
+    // แยก questions กับ settings ออกจากกัน
+    const { questions, ...settings } = data
 
-// อัปเดตการตั้งค่า (Settings) ของข้อสอบ
-export async function updateExamSettingsAction(id: string, settings: any) {
-  try {
     await adminClient
-      .patch(id)
+      .patch(examId)
       .set({
-        timeLimit: parseInt(settings.timeLimit) || 0,
-        passingScore: parseInt(settings.passingScore) || 0,
-        maxAttempts: parseInt(settings.maxAttempts) || 0,
-        shuffleQuestions: settings.shuffleQuestions || false,
+        questions: questions || [],
+        ...settings, // timeLimit, passingScore, etc.
       })
       .commit()
+
     return { success: true }
   } catch (error) {
-    console.error('Error updating settings:', error)
-    return { success: false }
+    console.error('Update Exam Error:', error)
+    return { success: false, error: 'บันทึกข้อสอบไม่สำเร็จ' }
   }
 }

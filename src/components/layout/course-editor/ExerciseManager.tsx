@@ -11,9 +11,14 @@ import TextEditor from '@/components/features/text-editor'
 interface ExerciseManagerProps {
   questions: any[]
   onChange: (updatedQuestions: any[]) => void
+  isReadOnly?: boolean
 }
 
-export default function ExerciseManager({ questions = [], onChange }: ExerciseManagerProps) {
+export default function ExerciseManager({
+  questions = [],
+  onChange,
+  isReadOnly = false,
+}: ExerciseManagerProps) {
   const addQuestion = (type: 'single' | 'multiple' | 'text') => {
     const newQuestion = {
       _key: crypto.randomUUID(),
@@ -139,6 +144,7 @@ export default function ExerciseManager({ questions = [], onChange }: ExerciseMa
                 onChange={(newContent) => updateQuestion(qIndex, 'content', newContent)}
                 placeholder='พิมพ์คำถาม...'
                 height={300}
+                readOnly={isReadOnly}
               />
             </div>
 
@@ -229,6 +235,7 @@ export default function ExerciseManager({ questions = [], onChange }: ExerciseMa
                 onChange={(newExplanation) => updateQuestion(qIndex, 'explanation', newExplanation)}
                 placeholder='อธิบายคำตอบ...'
                 height={200}
+                readOnly={isReadOnly}
               />
             </div>
           </div>

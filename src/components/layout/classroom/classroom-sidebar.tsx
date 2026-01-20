@@ -8,29 +8,55 @@ import {
 } from '@/components/ui/accordion'
 import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar'
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  useSidebar,
+} from '@/components/ui/sidebar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getFileIcon, getLessonType } from '@/constants/course'
+import { cn } from '@/lib/utils'
 import { formatDuration } from '@/utils/format'
-import { Clock, Download } from 'lucide-react'
+import { CheckCircle, Clock, Download } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import React from 'react'
+import CircularProgress from '@/components/ui/circular-progress'
 import CopyrightText from '../common/copyright'
 
 interface ClassroomSidebarProps extends React.ComponentProps<typeof Sidebar> {
   course: any
   activeLessonId: string | null
+  enrollment?: any
 }
 
-export function ClassroomSidebar({ course, activeLessonId, ...props }: ClassroomSidebarProps) {
+export function ClassroomSidebar({
+  course,
+  activeLessonId,
+  enrollment,
+  ...props
+}: ClassroomSidebarProps) {
   const router = useRouter()
   const params = useParams()
-  const allModuleKeys = course.modules?.map((m: any) => m._key) || []
+  const { setOpenMobile } = useSidebar()
 
-  {
-    /* --- ฟังก์ชันสลับบทเรียน --- */
-  }
+  // ข้อมูลบทเรียนที่เรียนจบแล้วจาก Firebase
+  const completedLessons = enrollment?.completedLessons || []
+  const totalProgress = enrollment?.progressPercentage || 0
+
+  // LOGIC: คำนวณเพื่อเปิด Accordion อัตโนมัติไปยัง Module ที่มีบทเรียน Active อยู่
+  const defaultOpenModule = React.useMemo(() => {
+    if (!activeLessonId) return []
+    const foundModule = course.modules?.find((m: any) =>
+      m.lessons?.some((l: any) => l._key === activeLessonId),
+    )
+    return foundModule ? [foundModule._key] : []
+  }, [activeLessonId, course.modules])
+
+  /* --- ฟังก์ชันสลับบทเรียน --- */
   const handleLessonChange = (lessonId: string) => {
+    setOpenMobile(false)
     router.push(`/courses/${params.slug}/classroom?v=${lessonId}`)
   }
 
@@ -44,9 +70,9 @@ export function ClassroomSidebar({ course, activeLessonId, ...props }: Classroom
       <SidebarHeader className='shrink-0 border-b bg-white p-6 group-data-[collapsible=icon]:hidden'>
         <div className='mb-2 flex items-center justify-between'>
           <span className='text-sm font-medium'>ความคืบหน้าการเรียน</span>
-          <span className='text-primary text-sm font-medium'>0%</span>
+          <span className='text-primary text-sm font-medium'>{totalProgress}%</span>
         </div>
-        <Progress value={0} className='h-2 bg-slate-100' />
+        <Progress value={totalProgress} className='h-2 bg-slate-100' />
       </SidebarHeader>
 
       <SidebarContent className='flex flex-col overflow-hidden bg-white'>
@@ -72,77 +98,125 @@ export function ClassroomSidebar({ course, activeLessonId, ...props }: Classroom
             <ScrollArea className='h-full'>
               {/* --- รายการบทเรียน --- */}
               <TabsContent value='timeline' className='m-0 border-none p-0'>
-                <Accordion
-                  type='multiple'
-                  className='w-full'
-                  //defaultValue={allModuleKeys} // ขยายทุกโมดูลเริ่มต้น
-                >
-                  {course.modules.map((module: any, index: number) => (
-                    <AccordionItem
-                      key={module._key}
-                      value={module._key}
-                      className='border-b border-slate-200 last:border-0'
-                    >
-                      <AccordionTrigger className='cursor-pointer px-5 py-4 transition-colors group-data-[collapsible=icon]:hidden hover:rounded-none hover:bg-slate-200/80 hover:no-underline'>
-                        <div className='flex flex-col items-start text-left'>
-                          <span className='text-sm font-medium'>
-                            บทที่ {index + 1} : {module.title}
-                          </span>
-                          <span className='text-secondary mt-1 text-xs font-normal'>
-                            {module.lessons?.length || 0} หัวข้อการเรียนรู้
-                          </span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className='pb-0'>
-                        <div className='flex flex-col'>
-                          {module.lessons?.map((lesson: any) => {
-                            const isActive = activeLessonId === lesson._key
-                            const { icon: LessonIcon } = getLessonType(lesson.lessonType)
+                <Accordion type='multiple' className='w-full' defaultValue={defaultOpenModule}>
+                  {course.modules.map((module: any, index: number) => {
+                    const moduleLessons = module.lessons || []
+                    const completedInModule = moduleLessons.filter((l: any) =>
+                      completedLessons.includes(l._key),
+                    ).length
+                    const modulePercent =
+                      moduleLessons.length > 0
+                        ? Math.round((completedInModule / moduleLessons.length) * 100)
+                        : 0
 
-                            return (
-                              <button
-                                key={lesson._key}
-                                onClick={() => handleLessonChange(lesson._key)}
-                                className={`flex cursor-pointer items-start gap-4 px-5 py-5 text-left transition-all ${
-                                  isActive
-                                    ? 'border-l-primary bg-primary/10 border-l-4'
-                                    : 'border-l-4 border-l-transparent hover:border-l-slate-400 hover:bg-slate-200/50'
-                                } ${'border-b border-slate-50 last:border-b-0'}`}
-                              >
-                                {/* ไอคอนบทเรียน */}
-                                <div className='mt-0.5 shrink-0'>
-                                  <div
-                                    className={`bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full ${isActive ? 'text-primary' : 'text-secondary'}`}
-                                  >
-                                    <LessonIcon size={18} />
+                    return (
+                      <AccordionItem
+                        key={module._key}
+                        value={module._key}
+                        className='border-b border-slate-200 last:border-0'
+                      >
+                        <AccordionTrigger className='cursor-pointer px-5 py-4 transition-colors group-data-[collapsible=icon]:hidden hover:rounded-none hover:bg-slate-200/80 hover:no-underline'>
+                          <div className='flex w-full items-center justify-between pr-4'>
+                            {/* ฝั่งซ้าย: ชื่อบทเรียน */}
+                            <span className='text-left text-sm font-semibold text-slate-700'>
+                              บทที่ {index + 1} : {module.title}
+                            </span>
+
+                            {/* ✅ ฝั่งขวา: Badge ดีไซน์เดียวกับ CourseDetail */}
+                            <div className='flex items-center gap-2'>
+                              <div className='flex items-center gap-2 rounded-full border border-slate-100 bg-slate-50/80 px-2 py-1'>
+                                <CircularProgress
+                                  value={modulePercent}
+                                  size={16}
+                                  strokeWidth={2.5}
+                                />
+                                <span className='text-[11px] font-medium text-slate-500'>
+                                  {completedInModule}/{moduleLessons.length} หัวข้อ
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className='pb-0'>
+                          <div className='flex flex-col'>
+                            {module.lessons?.map((lesson: any) => {
+                              const isActive = activeLessonId === lesson._key
+                              const isDone = completedLessons.includes(lesson._key)
+                              const { icon: LessonIcon } = getLessonType(lesson.lessonType)
+
+                              return (
+                                <button
+                                  key={lesson._key}
+                                  onClick={() => handleLessonChange(lesson._key)}
+                                  className={`flex cursor-pointer items-start gap-4 px-5 py-5 text-left transition-all ${
+                                    isActive
+                                      ? 'border-l-primary bg-primary/10 border-l-4'
+                                      : 'border-l-4 border-l-transparent hover:border-l-slate-400 hover:bg-slate-200/50'
+                                  } ${'border-b border-slate-50 last:border-b-0'}`}
+                                >
+                                  {/* ไอคอนบทเรียน พร้อมสถานะ Check */}
+                                  <div className='relative mt-0.5 shrink-0'>
+                                    <div
+                                      className={cn(
+                                        'flex h-10 w-10 items-center justify-center rounded-full transition-colors',
+                                        isActive
+                                          ? 'bg-primary text-white'
+                                          : isDone
+                                            ? 'bg-emerald-100 text-emerald-600'
+                                            : 'bg-slate-100 text-slate-400',
+                                      )}
+                                    >
+                                      {/* ✅ ถ้าเรียนจบแล้วให้โชว์ติ๊กถูก ถ้ายังให้โชว์ไอคอนปกติ */}
+                                      {isDone && !isActive ? (
+                                        <CheckCircle size={18} />
+                                      ) : (
+                                        <LessonIcon size={18} />
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                                {/* ข้อมูลบทเรียน */}
-                                <div className='min-w-0 flex-1 group-data-[collapsible=icon]:hidden'>
-                                  <p
-                                    className={`text-sm leading-snug font-medium ${isActive ? 'text-primary' : 'text-slate-700'}`}
-                                  >
-                                    {lesson.title}
-                                  </p>
-                                  <div className='mt-2 flex items-center gap-3 text-xs font-normal text-slate-400'>
-                                    <span className='rounded bg-slate-100 px-1.5 py-0.5 text-slate-500'>
-                                      {getLessonType(lesson.lessonType).label}
-                                    </span>
-                                    {lesson.lessonDuration > 0 && (
-                                      <span className='flex items-center gap-1'>
-                                        <Clock className='size-3' />
-                                        {formatDuration(lesson.lessonDuration)}
+
+                                  <div className='min-w-0 flex-1'>
+                                    <p
+                                      className={cn(
+                                        'text-sm leading-snug font-medium transition-colors',
+                                        isActive
+                                          ? 'text-primary'
+                                          : isDone
+                                            ? 'text-slate-400'
+                                            : 'text-slate-700',
+                                      )}
+                                    >
+                                      {lesson.title}
+                                    </p>
+                                    <div className='mt-2 flex items-center gap-3 text-xs font-normal text-slate-400'>
+                                      <span
+                                        className={cn(
+                                          'rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase',
+                                          isDone
+                                            ? 'bg-emerald-50 text-emerald-600'
+                                            : 'bg-slate-100 text-slate-500',
+                                        )}
+                                      >
+                                        {isDone
+                                          ? 'เรียนแล้ว'
+                                          : getLessonType(lesson.lessonType).label}
                                       </span>
-                                    )}
+                                      {lesson.lessonDuration > 0 && (
+                                        <span className='flex items-center gap-1'>
+                                          <Clock className='size-3' />
+                                          {formatDuration(lesson.lessonDuration)}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )
+                  })}
                 </Accordion>
               </TabsContent>
 

@@ -16,6 +16,7 @@ interface TextEditorProps {
   placeholder?: string
   height?: number
   width?: number
+  readOnly?: boolean
 }
 
 export default function TextEditor({
@@ -23,11 +24,12 @@ export default function TextEditor({
   onChange,
   placeholder,
   height = 500,
+  readOnly = false,
 }: TextEditorProps) {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const config = useMemo(
     () => ({
-      readonly: false,
+      readonly: readOnly,
       height: height,
       minHeight: 150,
       placeholder: placeholder || 'เริ่มพิมพ์เนื้อหา...',
@@ -83,11 +85,13 @@ export default function TextEditor({
       processPasteFromWord: true,
       beautifyHTML: false,
     }),
-    [placeholder, height],
+    [placeholder, height, readOnly],
   )
 
   return (
-    <div className='jodit-wrapper overflow-hidden rounded-md border bg-white text-black shadow-sm'>
+    <div
+      className={`jodit-wrapper overflow-hidden rounded-md border text-black shadow-sm ${readOnly ? 'pointer-events-none bg-slate-100 opacity-70' : 'bg-white'}`}
+    >
       <JoditEditor
         value={typeof content === 'string' ? content : ''}
         config={config}
@@ -102,7 +106,6 @@ export default function TextEditor({
           }, 500)
         }}
       />
-
       <style jsx global>{`
         .jodit-wrapper .jodit-toolbar__box {
           background-color: #f8fafc !important;

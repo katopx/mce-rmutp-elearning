@@ -7,6 +7,7 @@ import { groq } from 'next-sanity'
 async function showCourseDetail(slug: string) {
   const query = groq`*[_type == "course" && slug.current == $slug && status == "published"][0] {
     _id,
+    _updatedAt,
     title,
     "slug": slug.current,
     shortDescription,
@@ -17,6 +18,17 @@ async function showCourseDetail(slug: string) {
     registered,
     "image": image.asset->url,
     "category": category[]->title,
+
+    enableAssessment,
+    assessmentConfig,
+    
+    "exam": examRef->{
+      _id,
+      title,
+      timeLimit,
+      passingScore,
+      "totalQuestions": count(questions)
+    },
     
     // ข้อมูลผู้สอนหลัก
     "instructor": instructor-> {
@@ -56,11 +68,6 @@ async function showCourseDetail(slug: string) {
         lessonType,
         lessonDuration,
         "exerciseQuestionCount": count(exerciseData.questions),
-        "assessmentData": assessmentReference-> {
-          _id,
-          title,
-          "questionCount": count(questions)
-        }
       }
     },
     
@@ -77,7 +84,6 @@ async function showCourseDetail(slug: string) {
     "totalVideos": count(modules[].lessons[lessonType == "video"]),
     "totalArticles": count(modules[].lessons[lessonType == "article"]),
     "totalExercises": count(modules[].lessons[lessonType == "exercise"]),
-    "totalAssessments": count(modules[].lessons[lessonType == "assessment"]),
     "courseDuration": math::sum(modules[].lessons[].lessonDuration)
   }`
 

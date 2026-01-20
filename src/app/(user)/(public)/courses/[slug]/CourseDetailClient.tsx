@@ -11,11 +11,21 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import CircularProgress from '@/components/ui/circular-progress'
+import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getCourseDifficulty, getFileIcon, getLessonType } from '@/constants/course'
 import { useAuth } from '@/contexts/auth-context'
-import { checkEnrollment, enrollCourse } from '@/lib/firebase/services'
+import {
+  checkBookmarkStatus,
+  checkEnrollment,
+  enrollCourse,
+  getCourseRatingStats,
+  getRegisteredCount,
+  toggleBookmark,
+} from '@/lib/firebase/services'
+import { cn } from '@/lib/utils'
 import { formatDuration } from '@/utils/format'
 import {
   BarChart3,
@@ -28,6 +38,7 @@ import {
   LayoutList,
   PlayCircle,
   Share2,
+  Star,
   Trophy,
   Users,
 } from 'lucide-react'
@@ -42,28 +53,66 @@ interface CourseDetailProps {
 export default function CourseDetailClient({ course }: CourseDetailProps) {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const [enrollmentData, setEnrollmentData] = useState<any>(null)
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [isChecking, setIsChecking] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [realRegisteredCount, setRealRegisteredCount] = useState(0) // จำนวนคนเรียนจริง
+  const [ratingStats, setRatingStats] = useState({ average: 0, count: 0 })
+  const [isSaved, setIsSaved] = useState(false) // สถานะ Bookmark จริง
 
-  // 1. เช็คสถานะการลงทะเบียนจาก Firestore
+  // 🌍 1. ดึงข้อมูลสาธารณะ (ทำงานเสมอ ไม่ว่า Login หรือไม่)
   useEffect(() => {
-    const fetchStatus = async () => {
+    const fetchPublicData = async () => {
+      try {
+        const count = await getRegisteredCount(course._id)
+        setRealRegisteredCount(count)
+
+        const stats = await getCourseRatingStats(course._id)
+        setRatingStats(stats)
+      } catch (error) {
+        console.error('Public data error:', error)
+      }
+    }
+    fetchPublicData()
+  }, [course._id]) // ดึงข้อมูลใหม่เฉพาะเมื่อ courseId เปลี่ยน
+
+  // 🔒 2. ดึงข้อมูลส่วนตัว (ทำงานเฉพาะเมื่อ Login)
+  useEffect(() => {
+    const fetchPrivateData = async () => {
       if (user) {
         try {
+          // เช็คการลงทะเบียน
           const enrollment = await checkEnrollment(user.uid, course._id)
-          if (enrollment) setIsEnrolled(true)
-        } catch (error) {}
+          if (enrollment) {
+            setIsEnrolled(true)
+            setEnrollmentData(enrollment)
+          } else {
+            setIsEnrolled(false)
+            setEnrollmentData(null)
+          }
+
+          // เช็คการบันทึก Bookmark
+          const savedStatus = await checkBookmarkStatus(user.uid, course._id)
+          setIsSaved(savedStatus)
+        } catch (error) {
+          console.error('Private data error:', error)
+        }
+      } else {
+        // ล้างค่าเมื่อ Logout
+        setIsEnrolled(false)
+        setEnrollmentData(null)
+        setIsSaved(false)
       }
       setIsChecking(false)
     }
-    if (!authLoading) fetchStatus()
+
+    if (!authLoading) fetchPrivateData()
   }, [user, authLoading, course._id])
 
   // 2. ฟังก์ชันกดลงทะเบียน
   const handleEnrollClick = async () => {
     if (!user) return
-
     setIsSubmitting(true)
     try {
       await enrollCourse(user.uid, course)
@@ -74,6 +123,24 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
       toast.error('เกิดข้อผิดพลาด: ' + (error.message || 'กรุณาลองใหม่'))
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  // 3. ฟังก์ชันบันทึกคอร์ส
+  const handleSaveCourse = async () => {
+    if (!user) return
+    try {
+      // เรียกใช้ Service เพื่อ Toggle ค่าใน Firestore
+      const newStatus = await toggleBookmark(user.uid, course._id, isSaved)
+      setIsSaved(newStatus)
+
+      if (newStatus) {
+        toast.success('บันทึกหลักสูตรลงในรายการโปรดแล้ว')
+      } else {
+        toast.info('นำออกจากรายการโปรดแล้ว')
+      }
+    } catch (error) {
+      toast.error('ไม่สามารถบันทึกได้ กรุณาลองใหม่')
     }
   }
 
@@ -105,11 +172,21 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
 
             {/* แสดงหมวดหมู่ */}
             <div className='space-y-4 text-white'>
-              {course.category && (
-                <div className='flex items-center gap-2'>
-                  <Badge className='border-none bg-blue-600 text-white'>{course.category}</Badge>
+              <div className='flex flex-wrap items-center gap-2'>
+                {course.category && (
+                  <div className='flex items-center gap-2'>
+                    <Badge className='border-none bg-blue-600 text-white'>{course.category}</Badge>
+                  </div>
+                )}
+                {/* --- แสดง Rating --- */}
+                <div className='flex items-center gap-1 rounded-full bg-amber-400/20 px-3 py-0.5 text-amber-400'>
+                  <Star className='h-3.5 w-3.5 fill-current' />
+                  <span className='text-xs font-bold'>
+                    {ratingStats.count > 0 ? ratingStats.average.toFixed(1) : '0.0'}
+                  </span>
+                  <span className='text-[10px] opacity-70'>({ratingStats.count} รีวิว)</span>
                 </div>
-              )}
+              </div>
 
               {/* ชื่อหลักสูตร */}
               <h1 className='text-3xl leading-tight font-medium md:text-4xl lg:text-5xl'>
@@ -129,7 +206,7 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                 {/* จำนวนผู้ลงทะเบียน */}
                 <div className='flex items-center gap-1.5'>
                   <Users className='h-4 w-4 text-blue-400' />
-                  <span>ลงทะเบียนแล้ว {course.registered || 0} คน</span>
+                  <span>ลงทะเบียนแล้ว {realRegisteredCount} คน</span>
                 </div>
                 <div className='flex items-center gap-1.5'></div>
               </div>
@@ -215,88 +292,142 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                   {course.modules?.length > 0 ? (
                     <Accordion
                       type='multiple'
-                      // defaultValue={course.modules?.map((m: any) => m._key)} // ขยายทั้งหมด
+                      defaultValue={course.modules?.map((m: any) => m._key)} // ขยายทั้งหมด
                       className='w-full space-y-3'
                     >
-                      {course.modules?.map((module: any, index: number) => (
-                        <AccordionItem
-                          key={module._key}
-                          value={module._key}
-                          className='rounded-md border border-slate-200 last:border-b'
-                        >
-                          <AccordionTrigger className='cursor-pointer px-4 py-3 font-medium hover:rounded-none hover:bg-slate-100 hover:no-underline'>
-                            <div className='flex w-full items-center justify-between pr-4'>
-                              <span>
-                                บทที่ {index + 1} : {module.title}
-                              </span>
-                              <span className='text-sm font-normal'>
-                                {module.lessons?.length || 0} หัวข้อ
-                              </span>
-                            </div>
-                          </AccordionTrigger>
+                      {course.modules?.map((module: any, index: number) => {
+                        // Logic Progress
+                        const moduleLessons = module.lessons || []
+                        const completedInModule = isEnrolled
+                          ? moduleLessons.filter((l: any) =>
+                              enrollmentData?.completedLessons?.includes(l._key),
+                            ).length
+                          : 0
+                        const modulePercent =
+                          isEnrolled && moduleLessons.length > 0
+                            ? Math.round((completedInModule / moduleLessons.length) * 100)
+                            : 0
 
-                          {/* แสดงรายละเอียดบทเรียน */}
-                          <AccordionContent className='space-y-1 pt-0 pb-2'>
-                            {module.lessons?.map((lesson: any) => {
-                              {
-                                /* ใช้ฟังชั่นมาเปลี่ยนไอคอนและชื่อบทเรียนเป็นภาษาไทย */
-                              }
-                              const { icon: Icon, label, color } = getLessonType(lesson.lessonType)
-
-                              return (
-                                <div
-                                  key={lesson._key}
-                                  className='group flex items-center justify-between p-3 pr-8 pl-8'
-                                >
-                                  {/* โซนซ้าย: ไอคอนและชื่อบทเรียน */}
+                        return (
+                          <AccordionItem
+                            key={module._key}
+                            value={module._key}
+                            className='rounded-md border border-slate-200 last:border-b'
+                          >
+                            <AccordionTrigger className='cursor-pointer px-4 py-3 font-medium hover:rounded-none hover:bg-slate-100 hover:no-underline'>
+                              <div className='flex w-full items-center justify-between pr-4'>
+                                {/* ฝั่งซ้าย: ชื่อบทเรียน */}
+                                <span>
+                                  บทที่ {index + 1} : {module.title}
+                                </span>
+                                {/* ฝั่งขวา: วงกลม Progress + จำนวนหัวข้อ */}
+                                {isEnrolled && (
                                   <div className='flex items-center gap-3'>
-                                    <div className='flex shrink-0 items-center justify-center'>
-                                      <Icon className={`h-5 w-5 ${color}`} />
+                                    <div className='flex items-center gap-2 rounded-full border border-slate-100 bg-slate-50 px-2.5 py-1'>
+                                      <CircularProgress value={modulePercent} />
+                                      <span className='text-xs font-normal text-slate-500'>
+                                        {completedInModule}/{moduleLessons.length} หัวข้อ
+                                      </span>
                                     </div>
-                                    <div className='flex flex-col'>
-                                      <span className='text-sm font-medium'>{lesson.title}</span>
-                                      <span className='text-[10px] text-slate-400'>{label}</span>
-                                    </div>
+                                    {modulePercent === 100 && (
+                                      <CheckCircle2 className='h-4 w-4 text-emerald-500' />
+                                    )}
                                   </div>
+                                )}
+                              </div>
+                            </AccordionTrigger>
 
-                                  {/* โซนขวา: เวลา หรือ จำนวนข้อ */}
-                                  <div className='flex items-center gap-4 text-slate-400'>
-                                    {/* แสดงจำนวนข้อสำหรับแบบฝึกหัด */}
-                                    {lesson.lessonType === 'exercise' && (
-                                      <div className='flex items-center gap-1'>
-                                        <span className='text-xs font-normal'>
-                                          {lesson.exerciseQuestionCount || 0} ข้อ
-                                        </span>
+                            {/* แสดงรายละเอียดบทเรียน */}
+                            <AccordionContent className='space-y-1 pt-0 pb-2'>
+                              {module.lessons?.map((lesson: any, lessonIndex: number) => {
+                                const {
+                                  icon: Icon,
+                                  label,
+                                  color,
+                                } = getLessonType(lesson.lessonType)
+                                const isLessonDone =
+                                  isEnrolled &&
+                                  enrollmentData?.completedLessons?.includes(lesson._key)
+
+                                return (
+                                  <div
+                                    key={lesson._key}
+                                    className='group flex items-center justify-between p-3 pr-8 pl-8 transition-colors hover:bg-slate-50'
+                                  >
+                                    <div className='flex items-center gap-4'>
+                                      {/* สถานะบทเรียน */}
+                                      <div
+                                        className={cn(
+                                          'flex h-8 w-8 items-center justify-center rounded-full ring-4 ring-white',
+                                          isLessonDone
+                                            ? 'bg-emerald-100 text-emerald-600'
+                                            : 'bg-slate-100 text-slate-400',
+                                        )}
+                                      >
+                                        {isLessonDone ? (
+                                          <CheckCircle2 size={16} />
+                                        ) : (
+                                          <Icon size={14} />
+                                        )}
                                       </div>
-                                    )}
 
-                                    {/* แสดงจำนวนข้อสำหรับแบบทดสอบ */}
-                                    {lesson.lessonType === 'assessment' && (
-                                      <div className='flex items-center gap-1'>
-                                        <span className='text-xs font-normal'>
-                                          {lesson.assessmentData?.questionCount || 0} ข้อ
+                                      <div className='flex flex-col'>
+                                        <span
+                                          className={cn(
+                                            'text-sm font-medium',
+                                            isLessonDone ? 'text-slate-400' : 'text-slate-700',
+                                          )}
+                                        >
+                                          {lesson.title}
                                         </span>
+                                        <Badge
+                                          variant='secondary'
+                                          className='h-4 w-fit px-1.5 text-[9px] font-normal uppercase'
+                                        >
+                                          {label}
+                                        </Badge>
                                       </div>
-                                    )}
+                                    </div>
 
-                                    {/* แสดงเวลาเรียน เฉพาะบทเรียนวิดีโอ และบทเรียนเนื้อหา */}
-                                    {(lesson.lessonType === 'video' ||
-                                      lesson.lessonType === 'article') &&
-                                      lesson.lessonDuration > 0 && (
-                                        <div className='flex items-center gap-1.5'>
-                                          <Clock className='h-3 w-3' />
+                                    {/* โซนขวา: เวลา หรือ จำนวนข้อ */}
+                                    <div className='flex items-center gap-4 text-slate-400'>
+                                      {/* แสดงจำนวนข้อสำหรับแบบฝึกหัด */}
+                                      {lesson.lessonType === 'exercise' && (
+                                        <div className='flex items-center gap-1'>
                                           <span className='text-xs font-normal'>
-                                            {formatDuration(lesson.lessonDuration)}
+                                            {lesson.exerciseQuestionCount || 0} ข้อ
                                           </span>
                                         </div>
                                       )}
+
+                                      {/* แสดงจำนวนข้อสำหรับแบบทดสอบ */}
+                                      {lesson.lessonType === 'assessment' && (
+                                        <div className='flex items-center gap-1'>
+                                          <span className='text-xs font-normal'>
+                                            {lesson.assessmentData?.questionCount || 0} ข้อ
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      {/* แสดงเวลาเรียน เฉพาะบทเรียนวิดีโอ และบทเรียนเนื้อหา */}
+                                      {(lesson.lessonType === 'video' ||
+                                        lesson.lessonType === 'article') &&
+                                        lesson.lessonDuration > 0 && (
+                                          <div className='flex items-center gap-1.5'>
+                                            <Clock className='h-3 w-3' />
+                                            <span className='text-xs font-normal'>
+                                              {formatDuration(lesson.lessonDuration)}
+                                            </span>
+                                          </div>
+                                        )}
+                                    </div>
                                   </div>
-                                </div>
-                              )
-                            })}
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
+                                )
+                              })}
+                            </AccordionContent>
+                          </AccordionItem>
+                        )
+                      })}
                     </Accordion>
                   ) : (
                     // ถ้าไม่มีบทเรียน
@@ -493,6 +624,21 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                     className='h-full w-full object-cover'
                     alt={course.title}
                   />
+
+                  {/* --- แสดง Progress ด้านหน้าคอร์ส (เฉพาะคนที่ลงทะเบียนแล้ว) --- */}
+                  {isEnrolled && enrollmentData && (
+                    <div className='absolute inset-x-0 bottom-0 bg-slate-900/80 p-4 backdrop-blur-sm'>
+                      <div className='mb-2 flex items-center justify-between text-xs text-white'>
+                        <span className='flex items-center gap-1.5'>
+                          <PlayCircle className='h-3 w-3' /> ความคืบหน้าการเรียน
+                        </span>
+                        <span className='font-bold text-blue-400'>
+                          {enrollmentData.progressPercentage || 0}%
+                        </span>
+                      </div>
+                      <Progress value={enrollmentData.progressPercentage || 0} className='h-1.5' />
+                    </div>
+                  )}
                 </div>
 
                 <div className='space-y-6 p-6'>
@@ -533,9 +679,17 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
 
                     <div className='grid grid-cols-2 gap-2'>
                       {/* ปุ่มบันทึกหลักสูตร */}
-                      <AuthGuard text='กรุณาเข้าสู่ระบบเพื่อบันทึกหลักสูตร' toastType='error'>
-                        <Button variant='outline' className='gap-2'>
-                          <Bookmark className='h-4 w-4' /> บันทึก
+                      <AuthGuard
+                        text='กรุณาเข้าสู่ระบบเพื่อบันทึกหลักสูตร'
+                        toastType='error'
+                        action={handleSaveCourse}
+                      >
+                        <Button
+                          variant={isSaved ? 'default' : 'outline'}
+                          className='gap-2 transition-all'
+                        >
+                          <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
+                          {isSaved ? 'บันทึกแล้ว' : 'บันทึก'}
                         </Button>
                       </AuthGuard>
 
@@ -552,14 +706,16 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                   <h4 className='font-medium'>รายละเอียดหลักสูตร</h4>
                   <div className='font-normal'>
                     {/* แสดงเวลาเรียนรวมของหลักสูตร */}
-                    <div className='flex items-center gap-4'>
-                      <div className='rounded-full p-2'>
-                        <Clock size={18} />
+                    {course.courseDuration > 0 && (
+                      <div className='flex items-center gap-4'>
+                        <div className='rounded-full p-2'>
+                          <Clock size={18} />
+                        </div>
+                        <div className='flex flex-col'>
+                          <span>{formatDuration(course.courseDuration)}</span>
+                        </div>
                       </div>
-                      <div className='flex flex-col'>
-                        <span>{formatDuration(course.courseDuration)}</span>
-                      </div>
-                    </div>
+                    )}
 
                     {/* แสดงระดับความยากของหลักสูตร */}
                     <div className='flex items-center gap-4'>
@@ -604,7 +760,7 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
                     )}
 
                     {/* แสดงว่ามีแบบทดสอบวัดผล ก่อน-หลังเรียนจบ */}
-                    {course.totalAssessments > 0 && (
+                    {course.enableAssessment && (
                       <div className='flex items-center gap-4'>
                         <div className='rounded-full p-2'>
                           <Trophy size={18} />

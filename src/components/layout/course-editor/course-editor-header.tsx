@@ -9,6 +9,7 @@ import {
   CloudCheck,
   FileEdit,
   Globe,
+  GraduationCap,
   LayoutDashboard,
   Loader2,
   RotateCcw,
@@ -19,8 +20,8 @@ import Link from 'next/link'
 
 interface CorseEditorHeaderProps {
   courseTitle: string
-  currentView: 'content' | 'settings'
-  onSwitchView: (view: 'content' | 'settings') => void
+  currentView: 'content' | 'settings' | 'assessment'
+  onSwitchView: (view: 'content' | 'settings' | 'assessment') => void
   isSaving?: boolean
   isDirty?: boolean
   onSave?: () => void
@@ -102,6 +103,7 @@ export default function CorseEditorHeader({
 
       {/* --- CENTER: VIEW SWITCHER --- */}
       <nav className='absolute left-1/2 flex -translate-x-1/2 items-center p-1 shadow-sm'>
+        {/* Tab 1: เนื้อหาหลักสูตร */}
         <button
           onClick={() => onSwitchView('content')}
           className={cn(
@@ -114,6 +116,22 @@ export default function CorseEditorHeader({
           <LayoutDashboard className='h-4 w-4' />
           เนื้อหาหลักสูตร
         </button>
+
+        {/* Tab 2: การวัดผล */}
+        <button
+          onClick={() => onSwitchView('assessment')}
+          className={cn(
+            'text-ml flex items-center gap-2 rounded-lg px-8 py-1.5',
+            currentView === 'assessment'
+              ? 'text-primary border-primary rounded-b-none border-b-2 bg-white'
+              : 'hover:text-primary hover:border-primary rounded-b-none hover:border-b-2',
+          )}
+        >
+          <GraduationCap className='h-4 w-4' />
+          การวัดผล
+        </button>
+
+        {/* Tab 3: การตั้งค่า */}
         <button
           onClick={() => onSwitchView('settings')}
           className={cn(

@@ -1,21 +1,21 @@
 import { client } from '@/sanity/lib/client'
 import { groq } from 'next-sanity'
-import { notFound } from 'next/navigation'
-import AssessmentPlayer from './AssessmentPlayer'
+import { notFound, redirect } from 'next/navigation'
+import AssessmentClient from './AssessmentClient'
 
-interface Props {
-  params: Promise<{
-    slug: string
-    examId: string
-  }>
+interface PageProps {
+  params: Promise<{ slug: string; examId: string }>
+  searchParams: Promise<{ mode?: string }>
 }
 
-async function getAssessmentData(examId: string) {
-  const query = groq`*[_id == $examId][0] {
+// Query ดึงข้อมูลข้อสอบ
+async function getExamData(examId: string) {
+  const query = groq`*[_type == "exam" && _id == $examId][0] {
     _id,
     title,
-    timeLimit,
+    timeLimit, 
     passingScore,
+    shuffleQuestions,
     questions[] {
       _key,
       questionType,
@@ -23,40 +23,32 @@ async function getAssessmentData(examId: string) {
       choices[] {
         _key,
         choiceText,
-        "choiceImage": choiceImage.asset->url,
-        isCorrect
+        isCorrect 
       },
-      explanation
+      correctAnswerText, 
+      explanation 
     }
   }`
 
   return await client.fetch(query, { examId })
 }
 
-export default async function AssessmentPage({ params }: Props) {
-  const { examId } = await params
-  const assessmentData = await getAssessmentData(examId)
+// Query ดึง Course ID (เพื่อเอาไป Save ลง Firebase)
+async function getCourseId(slug: string) {
+  const query = groq`*[_type == "course" && slug.current == $slug][0]._id`
+  return await client.fetch(query, { slug })
+}
 
-  if (!assessmentData) {
-    notFound()
-  }
+export default async function AssessmentPage({ params, searchParams }: PageProps) {
+  const { slug, examId } = await params
+  const { mode } = await searchParams
 
-  return (
-    <main className='min-h-screen bg-slate-50 py-10'>
-      <div className='container mx-auto max-w-4xl px-4'>
-        {/* Header ส่วนหัวของหน้าสอบ */}
-        <div className='mb-8 flex flex-col items-center text-center'>
-          <h1 className='mb-2 text-3xl font-bold text-slate-900'>{assessmentData.title}</h1>
-          <div className='bg-primary mb-4 h-1 w-20 rounded-full' />
-          <p className='max-w-md text-slate-500'>
-            ขอให้คุณตั้งใจทำข้อสอบอย่างเต็มที่
-            ระบบจะทำการบันทึกคะแนนหลังจากที่คุณกดส่งคำตอบหรือหมดเวลา
-          </p>
-        </div>
+  // ตรวจสอบ Mode (ต้องเป็น pre หรือ post เท่านั้น)
+  const validMode = mode === 'post' ? 'post_test' : 'pre_test'
 
-        {/* เรียกใช้ Player ที่คุณทำไว้ */}
-        <AssessmentPlayer assessmentData={assessmentData} />
-      </div>
-    </main>
-  )
+  const [exam, courseId] = await Promise.all([getExamData(examId), getCourseId(slug)])
+
+  if (!exam || !courseId) notFound()
+
+  return <AssessmentClient exam={exam} courseId={courseId} courseSlug={slug} mode={validMode} />
 }

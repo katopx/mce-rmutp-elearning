@@ -70,7 +70,7 @@ export async function createCourseAction(formData: FormData) {
       title,
       slug: { _type: 'slug', current: slug },
       shortDescription,
-      difficulty, // ✅ เปลี่ยนจาก level
+      difficulty,
       image: imageReference,
 
       // ✅ เปลี่ยนจาก Instructor เป็น instructor ตาม Schema ใหม่
@@ -147,6 +147,7 @@ export async function saveCourseStructureAction(
   modules: any[],
   status: string,
   resources: any[] = [],
+  enableAssessment: boolean,
 ) {
   try {
     // A. จัดการ Modules และ Lessons (แบบ Inline ตาม Schema)
@@ -178,14 +179,6 @@ export async function saveCourseStructureAction(
         if (lessonData.lessonType === 'exercise') {
           lessonData.exerciseData = lesson.exerciseData || { questions: [] }
         }
-
-        // 4. ถ้าเป็น Assessment (Reference ไปที่คลังข้อสอบ)
-        if (lessonData.lessonType === 'assessment') {
-          lessonData.assessmentReference = lesson.assessmentReferenceId
-            ? { _type: 'reference', _ref: lesson.assessmentReferenceId }
-            : lesson.assessmentReference
-        }
-
         return lessonData
       })
 
@@ -212,6 +205,7 @@ export async function saveCourseStructureAction(
         modules: processedModules,
         resources: processedResources,
         status: status,
+        enableAssessment: enableAssessment,
       })
       .commit()
 

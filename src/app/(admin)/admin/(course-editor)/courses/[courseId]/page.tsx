@@ -5,6 +5,7 @@ import Loading from '@/components/layout/common/GlobalLoading'
 import CorseEditorHeader from '@/components/layout/course-editor/course-editor-header'
 import CourseSidebar from '@/components/layout/course-editor/course-editor-sidebar'
 import LessonForm from '@/components/layout/course-editor/lesson-form'
+import AssessmentManager from '@/components/layout/course-editor/AssessmentManager'
 import CourseSettingsForm from '@/components/layout/course-editor/settings-form'
 import {
   AlertDialog,
@@ -17,23 +18,27 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { getFullCourseDataAction, saveCourseStructureAction } from '@/lib/sanity/course-actions'
-import { use, useEffect, useRef, useState } from 'react'
+import { updateExamDataAction } from '@/lib/sanity/exam-actions'
+import { use, useEffect, useRef, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 export default function CourseEditorPage({ params }: { params: Promise<{ courseId: string }> }) {
+  const router = useRouter()
   const resolvedParams = use(params)
   const courseId = resolvedParams.courseId
 
   // --- States ---
   const [courseData, setCourseData] = useState<any>(null)
   const [metadata, setMetadata] = useState<any>(null)
-  const [currentView, setCurrentView] = useState<'content' | 'settings'>('content')
+  const [currentView, setCurrentView] = useState<'content' | 'assessment' | 'settings'>('content')
   const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isPublished, setIsPublished] = useState(courseData?.isPublished || false)
 
-  const [selectedLessonKey, setSelectedLessonKey] = useState<string | null>(null)
+  const [pendingExamData, setPendingExamData] = useState<any>(null)
 
+  const [selectedLessonKey, setSelectedLessonKey] = useState<string | null>(null)
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false)
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null)
 
@@ -41,19 +46,31 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
   const isDraftProcessed = useRef(false)
   const STORAGE_KEY = `draft-course-${courseId}`
 
+  // Fetch Data Function
+  const fetchCourseData = useCallback(async () => {
+    const data = await getFullCourseDataAction(courseId)
+    if (data) {
+      setMetadata({
+        categories: data.allCategories,
+        instructors: data.allInstructors,
+        exams: data.allExams,
+      })
+      setIsPublished(data.status === 'published')
+      setCourseData((prev: any) => {
+        return { ...data, ...prev }
+      })
+
+      setCourseData(data)
+
+      return data
+    }
+  }, [courseId])
+
   // --- Initialize Data ---
   useEffect(() => {
-    async function initData() {
-      const data = await getFullCourseDataAction(courseId)
-      if (data) {
-        setMetadata({
-          categories: data.allCategories,
-          instructors: data.allInstructors,
-          exams: data.allExams,
-        })
-        setIsPublished(data.status === 'published')
-
-        // ตรวจสอบ Draft ใน LocalStorage
+    async function init() {
+      const data = await fetchCourseData()
+      if (data && !isDraftProcessed.current) {
         const savedDraft = localStorage.getItem(STORAGE_KEY)
         if (savedDraft) {
           try {
@@ -62,19 +79,14 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
             setIsDirty(true)
             toast.info('กู้คืนข้อมูลฉบับร่างล่าสุดให้แล้ว')
           } catch (e) {
-            setCourseData(data)
+            // ignore
           }
-        } else {
-          setCourseData(data)
         }
-
-        setTimeout(() => {
-          isDraftProcessed.current = true
-        }, 500)
+        isDraftProcessed.current = true
       }
     }
-    initData()
-  }, [courseId])
+    init()
+  }, [fetchCourseData, STORAGE_KEY])
 
   // Fuction สำหรับบันทึกร่างอัตโนมัติลง LocalStorage
   useEffect(() => {
@@ -88,7 +100,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
       localStorage.setItem(STORAGE_KEY, JSON.stringify(draftData))
       setLastSavedTime(new Date())
     }
-  }, [courseData, isDirty, STORAGE_KEY])
+  }, [courseData, isDirty, STORAGE_KEY, isPublished])
 
   // Fuction ป้องกันการปิดหน้าเว็บโดยไม่ได้ตั้งใจ
   useEffect(() => {
@@ -102,12 +114,18 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isDirty])
 
+  // 1. รับค่า Exam ที่แก้ไขจาก AssessmentManager (ยังไม่ Save ลง DB)
+  const handleExamUpdate = (newData: any) => {
+    setPendingExamData(newData)
+    setIsDirty(true) // แจ้งเตือน Header ว่ามีของต้อง Save
+  }
+
   // Function สำหรับทิ้งร่างที่แก้ไขค้างไว้
   const handleDiscardDraft = async () => {
     setIsDiscardDialogOpen(false)
     const toastId = toast.loading('กำลังย้อนกลับข้อมูล...')
 
-    const data = await getFullCourseDataAction(courseId)
+    const data = await fetchCourseData()
     if (data) {
       setCourseData(data)
       setIsDirty(false)
@@ -136,23 +154,33 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
     setIsSaving(true)
     const toastId = toast.loading('กำลังบันทึกข้อมูลทั้งหมดลงระบบ...')
     try {
-      const result = await saveCourseStructureAction(
+      // Step A: บันทึก Course Structure (Modules, Resources, Status)
+      const courseResult = await saveCourseStructureAction(
         courseId,
         courseData.modules || [],
         isPublished ? 'published' : 'draft',
         courseData.resources || [],
+        courseData.enableAssessment || false,
       )
-      if (result.success) {
-        toast.success('บันทึกข้อมูลและอัปเดตเนื้อหาบทเรียนเรียบร้อย!', { id: toastId })
-        localStorage.removeItem(STORAGE_KEY)
-        setIsDirty(false)
 
-        // Refresh ข้อมูลหลังบันทึก
-        // const refreshed = await getFullCourseDataAction(courseId)
-        // if (refreshed) setCourseData(refreshed.course)
-      } else {
-        throw new Error(result.error)
+      if (!courseResult.success) {
+        throw new Error(courseResult.error || 'บันทึกโครงสร้างหลักสูตรไม่สำเร็จ')
       }
+
+      // Step B: บันทึก Exam Data (ถ้ามีการแก้ไข และมีข้อสอบอยู่จริง)
+      if (pendingExamData && courseData.examRef?._ref) {
+        const examId = courseData.examRef._ref
+        const examResult = await updateExamDataAction(examId, pendingExamData)
+
+        if (!examResult.success) {
+          throw new Error(examResult.error || 'บันทึกข้อมูลข้อสอบไม่สำเร็จ')
+        }
+      }
+
+      toast.success('บันทึกข้อมูลทั้งหมดเรียบร้อย!', { id: toastId })
+      localStorage.removeItem(STORAGE_KEY)
+      setIsDirty(false)
+      await fetchCourseData()
     } catch (error: any) {
       toast.error(error.message || 'เกิดข้อผิดพลาดในการบันทึก', { id: toastId })
     } finally {
@@ -179,11 +207,12 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
         lastSavedTime={lastSavedTime}
         isPublished={isPublished}
         onTogglePublish={handleTogglePublish}
+        isSaving={isSaving}
       />
 
       {/* --- Main Content --- */}
       <main className='flex-1 overflow-hidden'>
-        {currentView === 'content' ? (
+        {currentView === 'content' && (
           <div className='flex h-full w-full'>
             <aside className='w-80 flex-shrink-0 border-r bg-slate-50/50'>
               <CourseSidebar
@@ -209,6 +238,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
             <section className='flex-1 overflow-y-auto bg-white p-8'>
               {selectedLesson ? (
                 <LessonForm
+                  courseId={courseId}
                   key={selectedLesson._key}
                   lesson={selectedLesson}
                   //exams={metadata?.exams || []}
@@ -231,7 +261,29 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
               )}
             </section>
           </div>
-        ) : (
+        )}
+        {currentView === 'assessment' && (
+          <div className='h-full w-full overflow-y-auto bg-slate-50 p-8'>
+            <div className='mx-auto max-w-4xl'>
+              <AssessmentManager
+                courseId={courseId}
+                examId={courseData?.examRef?._ref || null}
+                pendingData={pendingExamData}
+                onUpdate={handleExamUpdate}
+                isEnabled={courseData?.enableAssessment || false}
+                onToggleEnable={(checked) => {
+                  handleUpdateGlobal({ enableAssessment: checked })
+                  setIsDirty(true)
+                }}
+                onRefresh={async () => {
+                  await fetchCourseData()
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {currentView === 'settings' && (
           <div className='h-full w-full overflow-y-auto bg-slate-50 p-8'>
             <div className='mx-auto max-w-4xl'>
               <CourseSettingsForm

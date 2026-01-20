@@ -185,7 +185,7 @@ export default function AdminCoursesPage() {
 
                 {/* Actions */}
                 <td className='px-8 py-4 text-right'>
-                  <div className='flex items-center justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100'>
+                  <div className='flex items-center justify-end gap-2'>
                     <Link href={`/admin/courses/${course._id}`}>
                       <Button
                         variant='ghost'

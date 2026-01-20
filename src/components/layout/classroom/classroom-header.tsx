@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useSidebar } from '@/components/ui/sidebar'
 import { ChevronLeft, Command, Menu } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 interface ClassroomHeaderProps {
@@ -15,6 +16,7 @@ export function ClassroomHeader({ course }: ClassroomHeaderProps) {
   const { toggleSidebar } = useSidebar()
   const router = useRouter()
 
+  const courseSlug = course?.slug?.current || course?.slug
   const courseTitle = course?.title || 'ไม่พบข้อมูล'
 
   return (
@@ -23,16 +25,19 @@ export function ClassroomHeader({ course }: ClassroomHeaderProps) {
         {/* --- Left Group --- */}
         <div className='flex items-center gap-2 overflow-hidden sm:gap-4'>
           {/* Logo Section */}
-          <div className='flex shrink-0 items-center gap-3'>
+          <Link
+            href='/'
+            className='hidden cursor-pointer items-center gap-3 transition-opacity hover:opacity-80 sm:flex'
+          >
             <div className='flex aspect-square size-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white'>
               <Command className='size-5' />
             </div>
             {/* Logo Text */}
-            <div className='hidden flex-col lg:flex'>
-              <span className='text-base font-semibold text-slate-900'>McE RMUTP</span>
-              <span className='text-xs font-medium text-slate-500'>Elearning Platform</span>
+            <div className='flex flex-col'>
+              <span className='text-base font-medium text-slate-900'>McE RMUTP</span>
+              <span className='text-xs font-normal text-slate-500'>Elearning Platform</span>
             </div>
-          </div>
+          </Link>
 
           <Separator orientation='vertical' className='mx-1 hidden h-8 opacity-50 lg:block' />
 
@@ -42,7 +47,7 @@ export function ClassroomHeader({ course }: ClassroomHeaderProps) {
             <Button
               variant='ghost'
               size='sm'
-              onClick={() => router.back()}
+              onClick={() => router.push(`/courses/${courseSlug}`)}
               className='h-9 cursor-pointer gap-1.5 px-2 font-normal transition-colors hover:bg-transparent hover:text-blue-600 active:bg-transparent'
             >
               <ChevronLeft className='size-4' />

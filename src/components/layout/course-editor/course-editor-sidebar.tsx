@@ -369,6 +369,7 @@ export default function CourseEditorSidebar({
   } | null>(null)
 
   // Form Data
+  const [newAssessmentName, setNewAssessmentName] = useState('')
   const [newModuleName, setNewModuleName] = useState('')
   const [renameModuleData, setRenameModuleData] = useState({ key: '', title: '' })
   const [newResourceData, setNewResourceData] = useState({ title: '', url: '', type: 'Unknown' })
@@ -402,6 +403,12 @@ export default function CourseEditorSidebar({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
   const generateTempId = () => `temp-${Date.now()}`
+
+  // --- Handlers: Assessment ---
+  const handleAddAssessment = () => {
+    if (!newAssessmentName.trim()) return
+    toast.success(`เพิ่มแบบทดสอบแล้ว "${newAssessmentName}" แล้ว`)
+  }
 
   // --- Handlers: Modules & Lessons ---
   const handleAddModule = () => {
@@ -443,6 +450,7 @@ export default function CourseEditorSidebar({
 
   const handleCreateLesson = (type: string, baseTitle: string) => {
     if (!activeModuleKey) return
+
     setIsAddLessonOpen(false)
 
     const currentModule = modules.find((m) => m._key === activeModuleKey)
@@ -833,17 +841,8 @@ export default function CourseEditorSidebar({
               </div>
             </div>
             <div className='space-y-3'>
-              <h3 className='text-sm font-medium'>แบบทดสอบและแบบฝึกหัด</h3>
+              <h3 className='text-sm font-medium'>แบบฝึกหัด</h3>
               <div className='grid grid-cols-2 gap-4'>
-                <button
-                  onClick={() => handleCreateLesson('assessment', 'แบบทดสอบ')}
-                  className='border-muted group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 p-4 transition-all hover:border-blue-500 hover:bg-blue-50'
-                >
-                  <HelpCircle className='mb-3 h-8 w-8 text-slate-400 group-hover:text-blue-500' />
-                  <span className='text-sm font-normal text-slate-700 group-hover:text-blue-700'>
-                    แบบทดสอบ
-                  </span>
-                </button>
                 <button
                   onClick={() => handleCreateLesson('exercise', 'แบบฝึกหัด')}
                   className='border-muted group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 p-4 transition-all hover:border-blue-500 hover:bg-blue-50'

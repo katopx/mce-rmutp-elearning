@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useSidebar } from '@/components/ui/sidebar'
 import { Command, Menu } from 'lucide-react'
+import Link from 'next/link'
 
 export function UserHeader() {
   const { toggleSidebar } = useSidebar()
@@ -27,7 +28,10 @@ export function UserHeader() {
           <Separator orientation='vertical' className='hidden h-6 opacity-50 sm:block' />
 
           {/* Logo Section */}
-          <div className='hidden items-center gap-3 sm:flex'>
+          <Link
+            href='/'
+            className='hidden cursor-pointer items-center gap-3 transition-opacity hover:opacity-80 sm:flex'
+          >
             <div className='flex aspect-square size-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white'>
               <Command className='size-5' />
             </div>
@@ -36,7 +40,7 @@ export function UserHeader() {
               <span className='text-base font-medium text-slate-900'>McE RMUTP</span>
               <span className='text-xs font-normal text-slate-500'>Elearning Platform</span>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* --- Search Form --- */}

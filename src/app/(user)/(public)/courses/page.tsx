@@ -83,12 +83,14 @@ export default async function CoursesPage() {
                       {course.instructor}
                     </span>
                   </div>
-                  <div className='flex shrink-0 items-center gap-1.5'>
-                    <Clock size={14} className='shrink-0 opacity-70' />
-                    <span className='font-normal whitespace-nowrap'>
-                      {formatDuration(course.courseDuration)}
-                    </span>
-                  </div>
+                  {course.courseDuration > 0 && (
+                    <div className='flex shrink-0 items-center gap-1.5'>
+                      <Clock size={14} className='shrink-0 opacity-70' />
+                      <span className='font-normal whitespace-nowrap'>
+                        {formatDuration(course.courseDuration)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
