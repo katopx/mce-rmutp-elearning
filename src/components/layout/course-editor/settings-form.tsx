@@ -1,5 +1,5 @@
 'use client'
-
+import imageCompression from 'browser-image-compression'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -93,6 +93,8 @@ export default function CourseSettingsForm({
   const [isCheckingSlug, setIsCheckingSlug] = useState(false)
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCompressingImage, setIsCompressingImage] = useState(false)
+
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [newCategoryData, setNewCategoryData] = useState({
     title: '',
@@ -257,14 +259,38 @@ export default function CourseSettingsForm({
   // --- Dropzone Logic ---
   const dropzone = useDropzone({
     onDropFile: async (file: File) => {
-      setImageFile(file)
-      const preview = URL.createObjectURL(file)
-      setCurrentImageUrl(preview)
-      return { status: 'success', result: preview }
+      // ✅ ป้องกันการ Upload ขณะบันทึก
+      if (isSubmitting) return { status: 'error', error: 'กำลังบันทึกข้อมูล กรุณารอสักครู่' }
+
+      setIsCompressingImage(true) // เริ่มบีบอัด
+
+      try {
+        // ตั้งค่าการบีบอัด
+        const options = {
+          maxSizeMB: 0.9,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+          fileType: 'image/webp',
+        }
+        // บีบอัด
+        const compressedFile = await imageCompression(file, options)
+
+        // สร้าง Preview และ Set State
+        const preview = URL.createObjectURL(compressedFile)
+        setImageFile(compressedFile)
+        setCurrentImageUrl(preview)
+
+        return { status: 'success', result: preview }
+      } catch (error) {
+        console.error('Compression Failed:', error)
+        return { status: 'error', error: 'ไม่สามารถบีบอัดรูปภาพได้' }
+      } finally {
+        setIsCompressingImage(false) // จบบีบอัด
+      }
     },
     validation: {
       accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] },
-      maxSize: 5 * 1024 * 1024,
+      maxSize: 5 * 1024 * 1024, // รับไฟล์ใหญ่ได้ (เพราะจะบีบอัด)
       maxFiles: 1,
     },
   })
@@ -272,6 +298,8 @@ export default function CourseSettingsForm({
   const handleRemoveFile = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    if (isSubmitting) return
+
     setImageFile(null)
     setCurrentImageUrl(null)
   }
@@ -308,6 +336,7 @@ export default function CourseSettingsForm({
             <Label className='font-medium'>ชื่อหลักสูตร</Label>
             <Input
               value={title}
+              disabled={isSubmitting}
               onChange={(e) => handleSlugChange(e.target.value)}
               placeholder='ใส่ชื่อหลักสูตร (ภาษาอังกฤษหรือไทย)'
             />
@@ -335,6 +364,7 @@ export default function CourseSettingsForm({
               <Input
                 placeholder='ใส่ชื่อ slug'
                 value={slug}
+                disabled={isSubmitting}
                 onChange={(e) => handleManualSlugChange(e.target.value)}
                 className={slugAvailable === true ? 'border-green-500 bg-green-50/10' : ''}
               />
@@ -376,6 +406,7 @@ export default function CourseSettingsForm({
                 value={shortDescription}
                 onChange={(e) => setShortDescription(e.target.value)}
                 className='min-h-[100px] resize-none'
+                disabled={isSubmitting}
               />
             </div>
             <div className='space-y-2'>
@@ -385,6 +416,7 @@ export default function CourseSettingsForm({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className='min-h-[120px]'
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -398,18 +430,25 @@ export default function CourseSettingsForm({
                   value={obj}
                   onChange={(e) => updateObjective(index, e.target.value)}
                   placeholder={`ข้อที่ ${index + 1}`}
+                  disabled={isSubmitting}
                 />
                 <Button
                   variant='ghost'
                   size='icon'
                   onClick={() => removeObjective(index)}
-                  disabled={objectives.length === 1}
+                  disabled={objectives.length === 1 || isSubmitting}
                 >
                   <Trash2 className='size-4 text-red-500' />
                 </Button>
               </div>
             ))}
-            <Button variant='outline' size='sm' onClick={addObjective} className='w-full'>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={addObjective}
+              disabled={isSubmitting}
+              className='w-full'
+            >
               <Plus className='mr-2 size-4' /> เพิ่มวัตถุประสงค์
             </Button>
           </div>
@@ -436,7 +475,11 @@ export default function CourseSettingsForm({
             {/* ผู้สอนร่วม */}
             <div className='col-span-1 space-y-2'>
               <Label>ผู้สอนร่วม</Label>
-              <MultiSelect values={selectedCoInstructors} onValuesChange={setSelectedCoInstructors}>
+              <MultiSelect
+                values={selectedCoInstructors}
+                onValuesChange={setSelectedCoInstructors}
+                disabled={isSubmitting}
+              >
                 <MultiSelectTrigger className='w-full'>
                   <MultiSelectValue placeholder='เลือกผู้สอนร่วม' />
                 </MultiSelectTrigger>
@@ -462,6 +505,7 @@ export default function CourseSettingsForm({
               className='bg-background cursor-pointer appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none'
               type='time'
               value={totalDuration}
+              disabled={isSubmitting}
               onChange={(e) => setTotalDuration(e.target.value)}
               placeholder='ปล่อยว่างหากไม่กำหนด'
             />
@@ -474,7 +518,11 @@ export default function CourseSettingsForm({
             </Label>
             <div className='flex items-center gap-2'>
               <div className='flex-1'>
-                <MultiSelect values={selectedCategories} onValuesChange={setSelectedCategories}>
+                <MultiSelect
+                  values={selectedCategories}
+                  onValuesChange={setSelectedCategories}
+                  disabled={isSubmitting}
+                >
                   <MultiSelectTrigger className='min-h-[2.5rem] w-full'>
                     <MultiSelectValue placeholder='เลือกหมวดหมู่' />
                   </MultiSelectTrigger>
@@ -496,6 +544,7 @@ export default function CourseSettingsForm({
                     type='button'
                     variant='outline'
                     size='icon'
+                    disabled={isSubmitting}
                     className='h-10 w-10 transition-colors hover:text-white'
                   >
                     <Plus className='size-4' />
@@ -639,7 +688,7 @@ export default function CourseSettingsForm({
             <Label className='text-sm font-medium'>
               ระดับ <span className='text-red-500'>*</span>
             </Label>
-            <Select value={difficulty} onValueChange={setDifficulty}>
+            <Select value={difficulty} onValueChange={setDifficulty} disabled={isSubmitting}>
               <SelectTrigger className='w-full cursor-pointer text-sm'>
                 <SelectValue placeholder='เลือกระดับความยาก' />
               </SelectTrigger>
@@ -663,6 +712,7 @@ export default function CourseSettingsForm({
                   currentImageUrl
                     ? 'border-slate-200 bg-white'
                     : 'border-slate-300 bg-slate-50/50 hover:border-slate-400 hover:bg-slate-50',
+                  isSubmitting && 'cursor-not-allowed opacity-50',
                 )}
               >
                 <DropzoneTrigger className='w-full outline-none'>

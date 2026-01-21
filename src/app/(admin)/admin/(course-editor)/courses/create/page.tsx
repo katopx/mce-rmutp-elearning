@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/contexts/auth-context'
+import imageCompression from 'browser-image-compression'
 import * as Icons from 'lucide-react'
 import {
   CheckCircle2,
@@ -77,6 +78,8 @@ export default function CreateCoursePage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCompressingImage, setIsCompressingImage] = useState(false)
+
   const [newCategoryData, setNewCategoryData] = useState({
     title: '',
     description: '',
@@ -213,12 +216,39 @@ export default function CreateCoursePage() {
   // --- Dropzone Logic ---
   const dropzone = useDropzone({
     onDropFile: async (file: File) => {
-      const preview = URL.createObjectURL(file)
-      setImageFile(file)
-      await new Promise((resolve) => setTimeout(resolve, 600))
-      return {
-        status: 'success',
-        result: preview,
+      // ป้องกันการลากไฟล์ใส่ตอนกำลังบันทึก
+      if (isSubmitting) return { status: 'error', error: 'กำลังบันทึกข้อมูล กรุณารอสักครู่' }
+
+      setIsCompressingImage(true) // เริ่มสถานะบีบอัด
+
+      try {
+        // ตั้งค่าการบีบอัด (ให้เหลือไม่เกิน 1MB เพื่อ Server Action)
+        const options = {
+          maxSizeMB: 0.9,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+          fileType: 'image/webp',
+        }
+
+        // เริ่มบีบอัด
+        const compressedFile = await imageCompression(file, options)
+
+        // สร้าง Preview จากไฟล์ที่บีบอัดแล้ว
+        const preview = URL.createObjectURL(compressedFile)
+        setImageFile(compressedFile)
+
+        return {
+          status: 'success',
+          result: preview,
+        }
+      } catch (error) {
+        console.error('Compression failed:', error)
+        return {
+          status: 'error',
+          error: 'ไม่สามารถบีบอัดไฟล์ภาพได้',
+        }
+      } finally {
+        setIsCompressingImage(false) // จบสถานะบีบอัด
       }
     },
     validation: {
@@ -232,7 +262,7 @@ export default function CreateCoursePage() {
   const { fileStatuses, onRemoveFile } = dropzone
   const currentFile = fileStatuses[0]
   const previewUrl = currentFile?.result
-  const isPending = currentFile?.status === 'pending'
+  const isPending = currentFile?.status === 'pending' || isCompressingImage
 
   // --- Cleanup Memory ---
   useEffect(() => {
@@ -246,7 +276,7 @@ export default function CreateCoursePage() {
   // --- Handlers ---
   const handleRemoveFile = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!currentFile) return
+    if (!currentFile || isSubmitting) return
 
     onRemoveFile(currentFile.id)
     setImageFile(null)
@@ -284,6 +314,7 @@ export default function CreateCoursePage() {
         variant='ghost'
         size='sm'
         onClick={() => router.back()}
+        disabled={isSubmitting}
         className='text-muted-foreground group mb-4 flex h-auto items-center p-0 transition-colors hover:bg-transparent hover:text-blue-600'
       >
         <ChevronLeft className='mr-1 size-4 transition-transform group-hover:-translate-x-1' />
@@ -304,6 +335,7 @@ export default function CreateCoursePage() {
               placeholder='ใส่ชื่อหลักสูตร (ภาษาอังกฤษหรือไทย)'
               className='text-base'
               value={title}
+              disabled={isSubmitting}
               onChange={(e) => {
                 setTitle(e.target.value)
                 handleSlugChange(e.target.value)
@@ -335,11 +367,12 @@ export default function CreateCoursePage() {
                 value={slug}
                 onChange={(e) => handleManualSlugChange(e.target.value)}
                 className={`text-base ${slugAvailable === true ? 'border-green-500 bg-green-50/10' : ''}`}
+                disabled={isSubmitting}
               />
               <Button
                 variant='outline'
                 onClick={handleCheckSlug}
-                disabled={isCheckingSlug || !slug}
+                disabled={isCheckingSlug || !slug || isSubmitting}
                 className={
                   slugAvailable === true ? 'border-green-200 bg-green-50 text-green-600' : ''
                 }
@@ -372,6 +405,7 @@ export default function CreateCoursePage() {
               className='min-h-[100px] resize-none text-base'
               value={shortDescription}
               onChange={(e) => setShortDescription(e.target.value)}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -385,7 +419,7 @@ export default function CreateCoursePage() {
                 <MultiSelect
                   values={selectedCategories}
                   onValuesChange={setSelectedCategories}
-                  disabled={isLoadingMeta}
+                  disabled={isLoadingMeta || isSubmitting}
                 >
                   <MultiSelectTrigger className='min-h-[2.5rem] w-full'>
                     <MultiSelectValue
@@ -411,6 +445,7 @@ export default function CreateCoursePage() {
                     variant='outline'
                     size='icon'
                     className='h-10 w-10 transition-colors hover:border-blue-500 hover:text-blue-500'
+                    disabled={isSubmitting}
                   >
                     <Plus className='size-4' />
                   </Button>
@@ -551,7 +586,7 @@ export default function CreateCoursePage() {
             <Label className='text-sm font-medium'>
               ระดับ <span className='text-red-500'>*</span>
             </Label>
-            <Select value={difficulty} onValueChange={setDifficulty}>
+            <Select value={difficulty} onValueChange={setDifficulty} disabled={isSubmitting}>
               <SelectTrigger className='w-full text-sm'>
                 <SelectValue placeholder='เลือกระดับความยาก' />
               </SelectTrigger>
@@ -625,7 +660,7 @@ export default function CreateCoursePage() {
           <Button
             size='lg'
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isCompressingImage}
             className='rounded-lg bg-blue-600 px-8 text-white transition-all hover:bg-blue-700'
           >
             {isSubmitting ? (
