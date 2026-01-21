@@ -557,9 +557,9 @@ export default function CreateCoursePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value='Beginner'>ระดับพื้นฐาน</SelectItem>
-                  <SelectItem value='Intermediate'>ระดับปานกลาง</SelectItem>
-                  <SelectItem value='Advanced'>ระดับสูง</SelectItem>
+                  <SelectItem value='basic'>ระดับพื้นฐาน</SelectItem>
+                  <SelectItem value='intermediate'>ระดับปานกลาง</SelectItem>
+                  <SelectItem value='advanced'>ระดับสูง</SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
