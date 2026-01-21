@@ -195,3 +195,38 @@ export async function getAllCoursesAction() {
     return []
   }
 }
+
+export async function getCoursesByUserAction(email: string, role: string) {
+  try {
+    // เลือกฟิลด์ที่จะดึง (เหมือนเดิม)
+    const fields = `
+      _id,
+      _createdAt,
+      title,
+      status,
+      "image": image.asset->url,
+      registered,
+      rating,
+      "instructor": instructor->{name, email}
+    `
+
+    let query = ''
+    let params = {}
+
+    // 🟢 ถ้าเป็น Admin ให้ดึงมา "ทั้งหมด"
+    if (role === 'admin' || role === 'super_admin') {
+      query = groq`*[_type == "course"] | order(_createdAt desc) { ${fields} }`
+    }
+    // 🟡 ถ้าเป็น Instructor ให้ดึง "เฉพาะของตัวเอง" (เช็คจาก email)
+    else {
+      query = groq`*[_type == "course" && instructor->email == $email] | order(_createdAt desc) { ${fields} }`
+      params = { email }
+    }
+
+    const data = await adminClient.fetch(query, params)
+    return { success: true, data }
+  } catch (error) {
+    console.error('Fetch Courses Error:', error)
+    return { success: false, data: [] }
+  }
+}

@@ -27,24 +27,60 @@ import {
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { deleteCourseAction } from '@/lib/sanity/course-actions'
+import { deleteCourseAction, getCoursesByUserAction } from '@/lib/sanity/course-actions'
 import { useRouter } from 'next/navigation'
 import { getCourseStats } from '@/lib/firebase/services'
-
+import { useAuth } from '@/contexts/auth-context'
 interface AdminCoursesClientProps {
   initialCourses: any[]
 }
 
 export default function AdminCoursesClient({ initialCourses }: AdminCoursesClientProps) {
   const router = useRouter()
+  const { user, role } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all')
   const [courses, setCourses] = useState(initialCourses)
   const [isDeleting, setIsDeleting] = useState<string | null>(null) // เก็บ ID ตัวที่กำลังลบ
+  const [isLoading, setIsLoading] = useState(true)
 
   // ✅ State สำหรับเก็บข้อมูลสถิติจาก Firebase { courseId: stats }
   const [stats, setStats] = useState<Record<string, { registered: number; rating: number }>>({})
   const [isLoadingStats, setIsLoadingStats] = useState(true)
+
+  // ✅ 2. Fetch Data ตาม Role และ Email
+  useEffect(() => {
+    async function fetchData() {
+      // รอให้ Auth โหลดเสร็จก่อน (ถ้า user ยังไม่มา ให้รอ)
+      if (!user || !role) return
+
+      setIsLoading(true)
+      try {
+        // ส่ง email และ role ไปให้ Server Action ตัดสินใจว่าจะคืนค่าอะไรกลับมา
+        const result = await getCoursesByUserAction(user.email!, role)
+
+        if (result.success) {
+          const fetchedCourses = result.data || []
+          setCourses(fetchedCourses)
+
+          // ดึง Stats จาก Firebase ต่อ (เหมือนเดิม)
+          const newStats: Record<string, any> = {}
+          await Promise.all(
+            fetchedCourses.map(async (c: any) => {
+              newStats[c._id] = await getCourseStats(c._id)
+            }),
+          )
+          setStats(newStats)
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [user, role])
 
   // ✅ Effect: โหลดสถิติจาก Firebase เมื่อหน้าเว็บโหลด
   useEffect(() => {
