@@ -162,7 +162,7 @@ export default function LessonForm({ lesson, onUpdate, exams = [], courseId }: L
           >
             เนื้อหาบทเรียน
           </TabsTrigger>
-          <TabsTrigger
+          {/* <TabsTrigger
             value='settings'
             // ✅ ถ้าไม่ใช่ exercise จะกดไม่ได้ และเปลี่ยนสีให้ดูจางลง
             disabled={!isSettingsEnabled}
@@ -176,7 +176,7 @@ export default function LessonForm({ lesson, onUpdate, exams = [], courseId }: L
             {!isSettingsEnabled && (
               <span className='ml-2 text-[10px] font-normal opacity-50'>(เร็วๆ นี้)</span>
             )}
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         <TabsContent value='content' className='mt-0 space-y-8'>
