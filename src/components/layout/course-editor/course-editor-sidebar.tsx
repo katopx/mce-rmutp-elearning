@@ -477,6 +477,7 @@ export default function CourseEditorSidebar({
       }),
     )
     if (!expandedItems.includes(activeModuleKey)) setExpandedItems((p) => [...p, activeModuleKey])
+    onSelectLesson(newLesson)
     setIsDirty(true)
     toast.success(`สร้าง "${newLesson.title}" แล้ว`)
   }
