@@ -318,3 +318,26 @@ export const getCourseRatingStats = async (courseId: string) => {
     return { average: 0, count: 0 }
   }
 }
+
+/**
+ *  ดึงสถิติรวมของคอร์ส
+ */
+export const getCourseStats = async (courseId: string) => {
+  try {
+    // 1. เรียกใช้ฟังก์ชันเดิมเพื่อนับจำนวนคนเรียน
+    const registered = await getRegisteredCount(courseId)
+
+    // 2. เรียกใช้ฟังก์ชันเดิมเพื่อหาคะแนนเฉลี่ย
+    const ratingStats = await getCourseRatingStats(courseId)
+
+    // 3. รวมผลลัพธ์ส่งกลับไป
+    return {
+      registered: registered,
+      rating: ratingStats.average,
+      reviewCount: ratingStats.count,
+    }
+  } catch (error) {
+    console.error(`Error getting course stats for ${courseId}:`, error)
+    return { registered: 0, rating: 0, reviewCount: 0 }
+  }
+}

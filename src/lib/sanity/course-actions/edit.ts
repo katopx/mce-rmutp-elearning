@@ -314,3 +314,21 @@ export async function updateCourseAction(courseId: string, formData: FormData) {
     return { success: false, error: error.message }
   }
 }
+
+/**
+ * 4. ลบหลักสูตร
+ */
+export async function deleteCourseAction(courseId: string) {
+  try {
+    // ลบข้อมูลจาก Sanity
+    await adminClient.delete(courseId)
+
+    // สั่งให้หน้า Admin List รีเฟรชข้อมูล
+    revalidatePath('/admin/courses')
+
+    return { success: true }
+  } catch (error: any) {
+    console.error('Delete Course Error:', error)
+    return { success: false, error: error.message }
+  }
+}
