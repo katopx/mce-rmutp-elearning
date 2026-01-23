@@ -24,7 +24,6 @@ import {
   PenTool,
   PlayCircle,
   Sparkles,
-  FileDown,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -73,8 +72,6 @@ export default function LessonForm({ lesson, onUpdate, exams = [], courseId }: L
         return <PlayCircle size={20} />
       case 'article':
         return <FileText size={20} />
-      case 'document':
-        return <FileDown size={20} />
       case 'exercise':
         return <PenTool size={20} />
       default:
@@ -120,7 +117,6 @@ export default function LessonForm({ lesson, onUpdate, exams = [], courseId }: L
             <span>
               {lesson.lessonType === 'video' && 'บทเรียนวิดีโอ'}
               {lesson.lessonType === 'article' && 'บทเรียนเนื้อหา'}
-              {lesson.lessonType === 'pdf' && 'บทเรียนเอกสาร'}
               {lesson.lessonType === 'exercise' && 'แบบฝึกหัด'}
             </span>
             {lesson.isNew && (
@@ -297,108 +293,7 @@ export default function LessonForm({ lesson, onUpdate, exams = [], courseId }: L
             </div>
           )}
 
-          {/* ✅ CASE 4: PDF (NEW) */}
-          {lesson.lessonType === 'document' && (
-            <>
-              <div className='space-y-4'>
-                <div className='mb-4 rounded-lg border border-orange-100 bg-orange-50 p-4'>
-                  <p className='flex items-center gap-2 text-sm font-medium text-orange-800'>
-                    <Sparkles size={16} /> เคล็ดลับการใช้ Google Drive
-                  </p>
-                  <p className='mt-1 text-xs text-orange-700'>
-                    วางลิงก์จากปุ่ม Share ได้เลย ระบบจะแปลงให้เปิดดูบนเว็บได้อัตโนมัติ
-                    (อย่าลืมตั้งค่าไฟล์เป็น "ทุกคนที่มีลิงก์อ่านได้")
-                  </p>
-                </div>
-
-                <div className='space-y-3'>
-                  <Label className='text-sm font-medium text-slate-900 md:text-base'>
-                    ลิงก์ไฟล์ PDF (Google Drive หรือ URL อื่นๆ)
-                  </Label>
-                  <div className='flex gap-2'>
-                    <Input
-                      value={lesson.pdfUrl || ''}
-                      onChange={(e) => {
-                        let val = e.target.value
-                        // ✅ เช็คถ้าเป็นลิงก์ Google Drive ให้แปลงเป็น /preview ทันที
-                        if (val.includes('drive.google.com')) {
-                          val = val
-                            .replace(/\/view.*$/, '/preview')
-                            .replace(/\/edit.*$/, '/preview')
-                        }
-                        handleChange('pdfUrl', val)
-                      }}
-                      placeholder='วางลิงก์ Google Drive ที่นี่...'
-                      className='h-11 border-slate-200 bg-white'
-                    />
-                    {lesson.pdfUrl && (
-                      <a href={lesson.pdfUrl} target='_blank' rel='noreferrer'>
-                        <Button size='icon' variant='outline' className='h-11 w-11 shrink-0'>
-                          <ExternalLink size={18} />
-                        </Button>
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {/* ✅ ระบุช่วงหน้าเพื่อ "ซอย" บทเรียน */}
-                <div className='grid grid-cols-2 gap-4'>
-                  <div className='space-y-2'>
-                    <Label className='text-xs font-bold tracking-wider text-slate-500 uppercase'>
-                      เริ่มแสดงหน้าที่
-                    </Label>
-                    <div className='relative'>
-                      <Input
-                        type='number'
-                        min={1}
-                        value={lesson.startPage || 1}
-                        onChange={(e) => handleChange('startPage', parseInt(e.target.value) || 1)}
-                        className='h-11 pl-10'
-                      />
-                      <FileText className='absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400' />
-                    </div>
-                  </div>
-
-                  <div className='space-y-2'>
-                    <Label className='text-xs font-bold tracking-wider text-slate-500 uppercase'>
-                      สิ้นสุดหน้าที่
-                    </Label>
-                    <Input
-                      type='number'
-                      min={1}
-                      value={lesson.endPage || ''}
-                      onChange={(e) =>
-                        handleChange('endPage', e.target.value ? parseInt(e.target.value) : '')
-                      }
-                      placeholder='(ไม่ระบุ)'
-                      className='h-11'
-                    />
-                  </div>
-                </div>
-
-                {/* Preview จิ๋วให้ Admin ดูว่าลิงก์ใช้ได้ไหม */}
-                {lesson.pdfUrl && (
-                  <div className='group relative mt-4 aspect-[16/9] overflow-hidden rounded-xl border bg-slate-100'>
-                    <iframe
-                      src={`${lesson.pdfUrl}#page=${lesson.startPage || 1}`}
-                      className='h-full w-full border-none'
-                    />
-                    <div className='pointer-events-none absolute inset-0 bg-black/5 transition-colors group-hover:bg-transparent' />
-                  </div>
-                )}
-
-                <div className='space-y-3 pt-4'>
-                  <Label className='text-sm font-medium'>คำอธิบายประกอบบทเรียนนี้</Label>
-                  <TextEditor
-                    content={lesson.articleContent || ''}
-                    onChange={(html) => handleChange('articleContent', html)}
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* CASE 5: EXERCISE (INLINE) */}
+          {/* CASE 4: EXERCISE (INLINE) */}
           {lesson.lessonType === 'exercise' && (
             <div className='space-y-6'>
               <ExerciseManager

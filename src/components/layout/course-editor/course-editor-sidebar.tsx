@@ -60,6 +60,7 @@ import {
   Edit,
   ExternalLink,
   File,
+  FileDown,
   FileText,
   GripVertical,
   HelpCircle,
@@ -238,7 +239,7 @@ function SortableLesson({ lesson, selectedLessonKey, onSelect, onDelete }: any) 
         >
           {lesson.lessonType === 'video' && <Video className='h-4 w-4' />}
           {lesson.lessonType === 'article' && <FileText className='h-4 w-4' />}
-          {lesson.lessonType === 'quiz' && <HelpCircle className='h-4 w-4' />}
+          {lesson.lessonType === 'document' && <FileDown className='h-4 w-4' />}
           {lesson.lessonType === 'exercise' && <PenTool className='h-4 w-4' />}
         </span>
         <span>
@@ -837,6 +838,15 @@ export default function CourseEditorSidebar({
                   <Video className='mb-3 h-8 w-8 text-slate-400 group-hover:text-blue-500' />
                   <span className='text-sm font-normal text-slate-700 group-hover:text-blue-700'>
                     บทเรียนวิดีโอ
+                  </span>
+                </button>
+                <button
+                  onClick={() => handleCreateLesson('document', 'บทเรียนเอกสาร')}
+                  className='border-muted group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 p-4 transition-all hover:border-blue-500 hover:bg-blue-50'
+                >
+                  <FileText className='mb-3 h-8 w-8 text-slate-400 group-hover:text-blue-500' />
+                  <span className='text-sm font-normal text-slate-700 group-hover:text-blue-700'>
+                    บทเรียนเอกสาร
                   </span>
                 </button>
               </div>

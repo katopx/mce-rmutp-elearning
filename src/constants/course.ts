@@ -1,4 +1,4 @@
-import { PlayCircle, FileText, Trophy, CopyCheck } from 'lucide-react'
+import { PlayCircle, FileText, Trophy, CopyCheck, FileDown } from 'lucide-react'
 
 // src={getFileIcon(resource.fileType.icon})}
 export const getFileIcon = (type: string | undefined) => {
@@ -60,6 +60,7 @@ export const getLessonType = (type: string | undefined) => {
   const types = {
     video: { label: 'บทเรียนวิดีโอ', icon: PlayCircle, color: 'text-blue-500' },
     article: { label: 'บทเรียนเนื้อหา', icon: FileText, color: 'text-slate-400' },
+    document: { label: 'บทเรียนเอกสาร', icon: FileDown, color: 'text-slate-400' },
     assessment: { label: 'แบบทดสอบ', icon: Trophy, color: 'text-orange-500' },
     exercise: { label: 'แบบฝึกหัด', icon: CopyCheck, color: 'text-green-500' },
   }

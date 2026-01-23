@@ -173,6 +173,14 @@ export async function saveCourseStructureAction(
           lessonData.articleContent = lesson.articleContent || ''
         }
 
+        if (lessonData.lessonType === 'pdf' || lessonData.lessonType === 'document') {
+          lessonData.pdfUrl = lesson.pdfUrl || ''
+          lessonData.startPage = Number(lesson.startPage) || 1
+          lessonData.endPage = lesson.endPage ? Number(lesson.endPage) : null
+          // อนุญาตให้เก็บ articleContent ไว้เป็นคำอธิบายใต้ PDF
+          lessonData.articleContent = lesson.articleContent || ''
+        }
+
         // 3. ถ้าเป็น Exercise (เก็บข้อมูลคำถาม Inline)
         if (lessonData.lessonType === 'exercise') {
           lessonData.exerciseData = lesson.exerciseData || { questions: [] }
@@ -402,6 +410,9 @@ export async function getFullCourseDataAction(courseId: string) {
             videoUrl,
             videoContent,
             articleContent,
+            pdfUrl,
+            startPage,
+            endPage,
             // แบบฝึกหัด (Inline Object)
             exerciseData {
               questions[] {

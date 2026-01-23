@@ -26,7 +26,9 @@ async function getCourseClassroom(slug: string) {
         videoSource,
         videoContent,
         articleContent,
-
+        pdfUrl,
+        startPage,
+        endPage,
         // ดึงข้อมูลจาก Exercise (Inline จาก course.ts)
         "exerciseData": {
           "questions": exerciseData.questions[] {

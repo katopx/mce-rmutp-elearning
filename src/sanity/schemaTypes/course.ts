@@ -296,6 +296,7 @@ export default defineType({
                         list: [
                           { title: '🎬 บทเรียนวิดีโอ', value: 'video' },
                           { title: '📄 บทเรียนเนื้อหา', value: 'article' },
+                          { title: '📝 บทเรียนเอกสาร', value: 'document' },
                           { title: '📝 แบบฝึกหัด', value: 'exercise' },
                           //{ title: '📝 แบบทดสอบ', value: 'assessment' }
                         ],
@@ -342,7 +343,30 @@ export default defineType({
                       name: 'articleContent',
                       title: 'เนื้อหาบทเรียน',
                       type: 'text',
-                      hidden: ({ parent }) => parent?.lessonType !== 'article',
+                      hidden: ({ parent }) =>
+                        parent?.lessonType !== 'article' && parent?.lessonType !== 'document',
+                    },
+
+                    // --- กรณีเลือก Document  ---
+                    {
+                      name: 'pdfUrl',
+                      title: 'ลิงก์ไฟล์ PDF (Google Drive หรือ URL)',
+                      type: 'url',
+                      hidden: ({ parent }) => parent?.lessonType !== 'document',
+                    },
+                    {
+                      name: 'startPage',
+                      title: 'เริ่มจากหน้าที่',
+                      type: 'number',
+                      initialValue: 1,
+                      hidden: ({ parent }) => parent?.lessonType !== 'document',
+                    },
+                    {
+                      name: 'endPage',
+                      title: 'ถึงหน้าที่',
+                      type: 'number',
+                      description: 'ปล่อยว่างหากต้องการแสดงจนจบไฟล์',
+                      hidden: ({ parent }) => parent?.lessonType !== 'document',
                     },
 
                     // --- Exercise (ฝังในหลักสูตร - Inline) ---

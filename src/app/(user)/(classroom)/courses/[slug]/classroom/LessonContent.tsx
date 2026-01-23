@@ -1,10 +1,19 @@
 'use client'
 
-import { ArrowRight, CheckCircle, Clock, FileText, Trophy, ChevronLeft } from 'lucide-react'
+import {
+  ArrowRight,
+  CheckCircle,
+  Clock,
+  FileText,
+  Trophy,
+  ChevronLeft,
+  FileDown,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import dynamic from 'next/dynamic'
 
 // Components & UI
 import VideoPlayer from '@/components/features/video-player'
@@ -82,6 +91,17 @@ export default function LessonContent({
         เลือกบทเรียนเพื่อเริ่มเรียนรู้
       </div>
     )
+  }
+
+  const getEmbedPdfUrl = (url: string, startPage: number) => {
+    if (!url) return ''
+    let processedUrl = url
+    // ถ้าเป็น Google Drive เปลี่ยนให้เป็น /preview เพื่อให้ฝังใน iframe ได้
+    if (url.includes('drive.google.com')) {
+      processedUrl = url.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview')
+    }
+    // เพิ่ม parameter สำหรับระบุหน้า
+    return `${processedUrl}#page=${startPage || 1}&view=FitH&toolbar=0`
   }
 
   const lessonConfig = getLessonType(lesson.lessonType)
@@ -179,6 +199,61 @@ export default function LessonContent({
               dangerouslySetInnerHTML={{ __html: lesson.articleContent || '' }}
             />
           </section>
+        )}
+
+        {/* ✅ 3. PDF / DOCUMENT CONTENT (เพิ่มใหม่) */}
+        {(lesson.lessonType === 'pdf' || lesson.lessonType === 'document') && (
+          <div className='space-y-6'>
+            {/* PDF Viewer */}
+            <div className='group relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-xl md:aspect-[16/10]'>
+              {lesson.pdfUrl ? (
+                <iframe
+                  src={getEmbedPdfUrl(lesson.pdfUrl, lesson.startPage)}
+                  className='h-full w-full border-none'
+                  allow='autoplay'
+                />
+              ) : (
+                <div className='flex h-full items-center justify-center text-slate-400'>
+                  ไม่พบไฟล์เอกสาร
+                </div>
+              )}
+              {/* Overlay (โชว์เฉพาะเมื่อมีไฟล์) */}
+              {lesson.pdfUrl && (
+                <div className='pointer-events-none absolute top-4 right-4'>
+                  <Badge
+                    variant='secondary'
+                    className='bg-white/90 font-light text-slate-600 shadow-sm backdrop-blur'
+                  >
+                    หน้าที่ {lesson.startPage || 1} {lesson.endPage ? `- ${lesson.endPage}` : ''}
+                  </Badge>
+                </div>
+              )}
+            </div>
+
+            {/* ปุ่มดาวน์โหลดหรือดูเต็มจอ (Optional) */}
+            <div className='flex justify-end'>
+              <Button
+                variant='ghost'
+                size='sm'
+                asChild
+                className='hover:text-primary font-light text-slate-400'
+              >
+                <a href={lesson.pdfUrl} target='_blank' rel='noopener noreferrer'>
+                  <FileDown size={16} className='mr-2' /> เปิดไฟล์ต้นฉบับ
+                </a>
+              </Button>
+            </div>
+
+            {/* คำอธิบายเพิ่มเติมใต้ PDF (ถ้ามี) */}
+            {lesson.articleContent && (
+              <section className='rounded-2xl border border-slate-100 bg-white p-6 md:p-10'>
+                <article
+                  className='jodit-wysiwyg prose prose-slate max-w-none'
+                  dangerouslySetInnerHTML={{ __html: lesson.articleContent }}
+                />
+              </section>
+            )}
+          </div>
         )}
 
         {/* 3. EXERCISE CONTENT */}

@@ -175,7 +175,16 @@ export async function saveCourseStructureAction(
           lessonData.articleContent = lesson.articleContent || ''
         }
 
-        // 3. ถ้าเป็น Exercise (เก็บข้อมูลคำถาม Inline)
+        // 3. ถ้าเป็น Document หรือ PDF
+        if (lessonData.lessonType === 'document' || lessonData.lessonType === 'pdf') {
+          lessonData.pdfUrl = lesson.pdfUrl || ''
+          lessonData.startPage = Number(lesson.startPage) || 1
+          lessonData.endPage = lesson.endPage ? Number(lesson.endPage) : null
+          // อนุญาตให้เก็บเนื้อหา Text Editor ไว้เป็นคำอธิบายใต้ PDF ด้วย
+          lessonData.articleContent = lesson.articleContent || ''
+        }
+
+        // 4. ถ้าเป็น Exercise (เก็บข้อมูลคำถาม Inline)
         if (lessonData.lessonType === 'exercise') {
           lessonData.exerciseData = lesson.exerciseData || { questions: [] }
         }
