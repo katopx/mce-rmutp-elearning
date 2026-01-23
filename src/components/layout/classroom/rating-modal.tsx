@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Star } from 'lucide-react'
-import { submitReview } from '@/lib/firebase/services'
+import { submitReview } from '@/lib/firebase'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 

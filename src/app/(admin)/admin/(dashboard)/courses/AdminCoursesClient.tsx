@@ -29,7 +29,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { deleteCourseAction, getCoursesByUserAction } from '@/lib/sanity/course-actions'
 import { useRouter } from 'next/navigation'
-import { getCourseStats } from '@/lib/firebase/services'
+import { getCourseStats } from '@/lib/firebase'
 import { useAuth } from '@/contexts/auth-context'
 interface AdminCoursesClientProps {
   initialCourses: any[]
@@ -293,13 +293,15 @@ export default function AdminCoursesClient({ initialCourses }: AdminCoursesClien
                         </Button>
                       </Link>
 
-                      <Button
-                        variant='ghost'
-                        size='icon'
-                        className='size-8 text-slate-600 hover:text-blue-600'
-                      >
-                        <BarChart3 className='size-4' />
-                      </Button>
+                      <Link href={`/admin/courses/${course._id}/analytics`}>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          className='size-8 text-slate-600 hover:text-blue-600'
+                        >
+                          <BarChart3 className='size-4' />
+                        </Button>
+                      </Link>
 
                       {/* ✅ ปุ่ม Delete พร้อม AlertDialog */}
                       <AlertDialog>

@@ -9,7 +9,7 @@ import LessonContent from './LessonContent'
 // Auth & Firebase
 import { RatingModal } from '@/components/layout/classroom/rating-modal'
 import { useAuth } from '@/contexts/auth-context'
-import { checkEnrollment } from '@/lib/firebase/services'
+import { checkEnrollment } from '@/lib/firebase'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 

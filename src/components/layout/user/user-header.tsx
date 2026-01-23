@@ -35,6 +35,7 @@ export function UserHeader() {
             <div className='flex aspect-square size-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white'>
               <Command className='size-5' />
             </div>
+
             {/* Logo Text */}
             <div className='flex flex-col'>
               <span className='text-base font-medium text-slate-900'>McE RMUTP</span>

@@ -33,7 +33,7 @@ import { toast } from 'sonner'
 
 // Auth & Firebase
 import { useAuth } from '@/contexts/auth-context'
-import { saveExamResult } from '@/lib/firebase/services'
+import { saveExamResult } from '@/lib/firebase'
 
 interface AssessmentClientProps {
   exam: any
@@ -42,7 +42,7 @@ interface AssessmentClientProps {
   mode: 'pre_test' | 'post_test'
 }
 
-const thaiLabels = ['ก', 'ข', 'ค', 'ง', 'จ', 'ฉ', 'ช']
+const THAI_CHOICES = ['ก', 'ข', 'ค', 'ง', 'จ', 'ฉ', 'ช', 'ซ', 'ฌ', 'ญ']
 
 export default function AssessmentClient({
   exam,
@@ -138,11 +138,15 @@ export default function AssessmentClient({
       const detailedAnswers = questions.map((q: any) => {
         const userAnswerKey = answers[q._key]
         const correctChoice = q.choices?.find((c: any) => c.isCorrect)
+        const userSelectedChoice = q.choices?.find((c: any) => c._key === userAnswerKey)
         const isCorrect = userAnswerKey === correctChoice?._key
         if (isCorrect) rawScore++
         return {
-          questionId: q._key,
-          isCorrect: isCorrect,
+          questionId: q._key || 'unknown_id',
+          questionText: q.content || 'ไม่ระบุโจทย์',
+          selectedOption: userSelectedChoice?.choiceText || 'ไม่ตอบ',
+          correctOption: correctChoice?.choiceText || 'ไม่ระบุ',
+          isCorrect: !!isCorrect,
           selectedChoiceId: userAnswerKey || null,
         }
       })
@@ -151,12 +155,12 @@ export default function AssessmentClient({
       const isPassed = percentage >= (exam.passingScore || 60)
 
       await saveExamResult(user.uid, courseId, {
-        examId: exam._id,
+        examId: exam._id || 'unknown_exam',
         type: mode,
-        score: rawScore,
-        totalScore: totalQuestions,
-        isPassed: isPassed,
-        timeTaken: timeTaken,
+        score: rawScore || 0,
+        totalScore: totalQuestions || 0,
+        isPassed: !!isPassed,
+        timeTaken: timeTaken || 0,
         answers: detailedAnswers,
       })
 
@@ -358,7 +362,7 @@ export default function AssessmentClient({
                           : 'border-slate-200 text-slate-400'
                       }`}
                     >
-                      {thaiLabels[i]}
+                      {THAI_CHOICES[i]}
                     </div>
 
                     <div className='flex-1'>

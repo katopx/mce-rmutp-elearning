@@ -27,14 +27,20 @@ export default function TextEditor({
   readOnly = false,
 }: TextEditorProps) {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+
   const config = useMemo(
     () => ({
       readonly: readOnly,
       height: height,
       minHeight: 150,
-      placeholder: placeholder || 'เริ่มพิมพ์เนื้อหา...',
+      placeholder: placeholder || '',
       toolbarSticky: false,
       enableDragAndDropFileToEditor: false,
+      showAddNewLine: false,
+      showContextInActivity: false,
+      showCharsCounter: false,
+      showWordsCounter: false,
+      showXPathInStatusbar: false,
       buttons: [
         'source',
         '|',
@@ -78,9 +84,6 @@ export default function TextEditor({
       askBeforePasteHTML: false,
       askBeforePasteFromWord: false,
       defaultActionOnPaste: 'insert_clear_html' as const,
-      showCharsCounter: false,
-      showWordsCounter: false,
-      showXPathInStatusbar: false,
       processPasteHTML: true,
       processPasteFromWord: true,
       beautifyHTML: false,
@@ -90,11 +93,18 @@ export default function TextEditor({
 
   return (
     <div
-      className={`jodit-wrapper overflow-hidden rounded-md border text-black shadow-sm ${readOnly ? 'pointer-events-none bg-slate-100 opacity-70' : 'bg-white'}`}
+      className={`jodit-wrapper overflow-hidden rounded-md border text-black shadow-sm ${
+        readOnly ? 'pointer-events-none bg-slate-100 opacity-70' : 'bg-white'
+      }`}
     >
       <JoditEditor
         value={typeof content === 'string' ? content : ''}
         config={config}
+        // @ts-ignore
+        onBlur={(newContent) => {
+          // แนะนำ: ใช้ onBlur แทน onChange เพื่อ Performance ที่ดีขึ้นถ้าไม่ต้องการ Realtime จริงๆ
+          // แต่ถ้าต้องการ Realtime ให้ใช้ onChange แบบเดิมได้ครับ
+        }}
         onChange={(newContent) => {
           if (timerRef.current) clearTimeout(timerRef.current)
 
@@ -115,6 +125,11 @@ export default function TextEditor({
           display: none !important;
         }
 
+        /* ซ่อนปุ่ม Add New Line ที่อาจหลงเหลือ */
+        .jodit-add-new-line {
+          display: none !important;
+        }
+
         /* 🔧 กู้คืน Paragraph (ให้มีระยะห่างบรรทัด) */
         .jodit-wysiwyg p {
           margin-bottom: 1em !important;
@@ -124,12 +139,12 @@ export default function TextEditor({
         /* 🔧 กู้คืน Lists (ให้มีจุด/ตัวเลข และไม่ล้นขอบ) */
         .jodit-wysiwyg ul {
           list-style-type: disc !important;
-          padding-left: 2.5rem !important; /* ดันเข้ามาไม่ให้ล้น */
+          padding-left: 2.5rem !important;
           margin-bottom: 1rem !important;
         }
         .jodit-wysiwyg ol {
           list-style-type: decimal !important;
-          padding-left: 2.5rem !important; /* ดันเข้ามาไม่ให้ล้น */
+          padding-left: 2.5rem !important;
           margin-bottom: 1rem !important;
         }
         .jodit-wysiwyg li {

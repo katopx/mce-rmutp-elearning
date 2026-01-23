@@ -17,6 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
 import { getFullCourseDataAction, saveCourseStructureAction } from '@/lib/sanity/course-actions'
 import { updateExamDataAction } from '@/lib/sanity/exam-actions'
 import { use, useEffect, useRef, useState, useCallback } from 'react'
@@ -56,36 +58,49 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
         exams: data.allExams,
       })
       setIsPublished(data.status === 'published')
-      setCourseData((prev: any) => {
-        return { ...data, ...prev }
-      })
-
-      setCourseData(data)
-
-      return data
     }
+    return data
   }, [courseId])
 
   // --- Initialize Data ---
   useEffect(() => {
+    let isMounted = true
     async function init() {
-      const data = await fetchCourseData()
-      if (data && !isDraftProcessed.current) {
-        const savedDraft = localStorage.getItem(STORAGE_KEY)
-        if (savedDraft) {
-          try {
-            const parsed = JSON.parse(savedDraft)
-            setCourseData({ ...data, ...parsed })
-            setIsDirty(true)
-            toast.info('กู้คืนข้อมูลฉบับร่างล่าสุดให้แล้ว')
-          } catch (e) {
-            // ignore
+      const serverData = await fetchCourseData()
+      if (serverData && isMounted) {
+        let finalData = { ...serverData }
+        let hasDraft = false
+        if (!isDraftProcessed.current) {
+          const savedDraft = localStorage.getItem(STORAGE_KEY)
+          if (savedDraft) {
+            try {
+              const parsed = JSON.parse(savedDraft)
+              // รวมข้อมูลแบบร่าง กับข้อมูลจาก Server
+              finalData = { ...serverData, ...parsed }
+
+              // กู้คืนข้อมูลข้อสอบที่แก้ไขค้างไว้ (ถ้ามี)
+              if (parsed.pendingExamData) {
+                setPendingExamData(parsed.pendingExamData)
+              }
+
+              hasDraft = true
+              toast.info('กู้คืนข้อมูลล่าสุดแล้ว')
+            } catch (e) {
+              console.error('Error parsing draft', e)
+            }
           }
+          isDraftProcessed.current = true
         }
-        isDraftProcessed.current = true
+        setCourseData(finalData)
+        if (hasDraft) {
+          setIsDirty(true)
+        }
       }
     }
     init()
+    return () => {
+      isMounted = false
+    }
   }, [fetchCourseData, STORAGE_KEY])
 
   // Fuction สำหรับบันทึกร่างอัตโนมัติลง LocalStorage
@@ -96,11 +111,12 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
         resources: courseData.resources,
         title: courseData.title,
         isPublished: isPublished,
+        pendingExamData: pendingExamData,
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(draftData))
       setLastSavedTime(new Date())
     }
-  }, [courseData, isDirty, STORAGE_KEY, isPublished])
+  }, [courseData, isDirty, STORAGE_KEY, isPublished, pendingExamData])
 
   // Fuction ป้องกันการปิดหน้าเว็บโดยไม่ได้ตั้งใจ
   useEffect(() => {
@@ -128,6 +144,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
     const data = await fetchCourseData()
     if (data) {
       setCourseData(data)
+      setPendingExamData(null)
       setIsDirty(false)
       localStorage.removeItem(STORAGE_KEY)
       toast.success('ล้างฉบับร่างและย้อนกลับข้อมูลปัจจุบันแล้ว', { id: toastId })
@@ -180,7 +197,14 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
       toast.success('บันทึกข้อมูลทั้งหมดเรียบร้อย!', { id: toastId })
       localStorage.removeItem(STORAGE_KEY)
       setIsDirty(false)
-      await fetchCourseData()
+
+      setPendingExamData(null)
+
+      // โหลดข้อมูลล่าสุดจาก Server อีกครั้ง
+      const freshData = await fetchCourseData()
+      if (freshData) {
+        setCourseData(freshData)
+      }
     } catch (error: any) {
       toast.error(error.message || 'เกิดข้อผิดพลาดในการบันทึก', { id: toastId })
     } finally {
@@ -195,7 +219,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
     .find((l: any) => l?._key === selectedLessonKey)
 
   return (
-    <div className='flex h-screen flex-col'>
+    <div className='flex h-screen flex-col overflow-hidden'>
       {/* --- Header --- */}
       <CorseEditorHeader
         courseTitle={courseData.title}
@@ -211,10 +235,16 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
       />
 
       {/* --- Main Content --- */}
-      <main className='flex-1 overflow-hidden'>
+      <main className='relative flex-1 overflow-hidden'>
         {currentView === 'content' && (
           <div className='flex h-full w-full'>
-            <aside className='w-80 flex-shrink-0 border-r bg-slate-50/50'>
+            {/* Sidebar: 
+                - Mobile: ซ่อนถ้ามีการเลือก Lesson (selectedLessonKey มีค่า)
+                - Desktop: แสดงตลอด (w-80) 
+            */}
+            <aside
+              className={`h-full flex-shrink-0 border-r bg-slate-50/50 transition-all ${selectedLessonKey ? 'hidden md:block' : 'w-full md:w-80'} md:w-80`}
+            >
               <CourseSidebar
                 courseId={courseId}
                 modules={courseData.modules || []}
@@ -235,35 +265,64 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
                 setIsDirty={setIsDirty}
               />
             </aside>
-            <section className='flex-1 overflow-y-auto bg-white p-8'>
+
+            {/* Editor Area:
+                - Mobile: ซ่อนถ้ายังไม่เลือก Lesson, ถ้าเลือกแล้วให้เต็มจอ (w-full)
+                - Desktop: flex-1 (กินพื้นที่ที่เหลือ)
+            */}
+            <section
+              className={`h-full overflow-y-auto bg-white ${selectedLessonKey ? 'block w-full' : 'hidden md:block'} md:flex-1`}
+            >
               {selectedLesson ? (
-                <LessonForm
-                  courseId={courseId}
-                  key={selectedLesson._key}
-                  lesson={selectedLesson}
-                  //exams={metadata?.exams || []}
-                  onUpdate={(newData) => {
-                    // Logic อัปเดตเฉพาะบทเรียนในก้อน Modules
-                    const updatedModules = courseData.modules.map((mod: any) => ({
-                      ...mod,
-                      lessons: mod.lessons?.map((les: any) =>
-                        les._key === selectedLesson._key ? { ...les, ...newData } : les,
-                      ),
-                    }))
-                    handleUpdateGlobal({ modules: updatedModules })
-                    setIsDirty(true)
-                  }}
-                />
+                <div className='flex h-full flex-col'>
+                  {/* Mobile Back Button: แสดงเฉพาะ Mobile เมื่ออยู่ในหน้า Editor */}
+                  <div className='sticky top-0 z-10 flex items-center gap-2 border-b bg-white p-2 md:hidden'>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={() => setSelectedLessonKey(null)}
+                      className='gap-1 text-slate-600'
+                    >
+                      <ArrowLeft className='h-4 w-4' />
+                      กลับไปหน้ารายการ
+                    </Button>
+                    <span className='max-w-[200px] truncate text-sm font-medium'>
+                      {selectedLesson.title || 'Untitled Lesson'}
+                    </span>
+                  </div>
+
+                  <div className='flex-1 p-4 md:p-8'>
+                    <LessonForm
+                      courseId={courseId}
+                      key={selectedLesson._key}
+                      lesson={selectedLesson}
+                      onUpdate={(newData) => {
+                        const updatedModules = courseData.modules.map((mod: any) => ({
+                          ...mod,
+                          lessons: mod.lessons?.map((les: any) =>
+                            les._key === selectedLesson._key ? { ...les, ...newData } : les,
+                          ),
+                        }))
+                        handleUpdateGlobal({ modules: updatedModules })
+                        setIsDirty(true)
+                      }}
+                    />
+                  </div>
+                </div>
               ) : (
-                <div className='flex h-full items-center justify-center text-slate-400'>
-                  เลือกบทเรียนจากแถบด้านซ้ายเพื่อเริ่มแก้ไข
+                <div className='flex h-full items-center justify-center p-4 text-center text-slate-400'>
+                  <div className='flex flex-col items-center gap-2'>
+                    {/* Icon or Text */}
+                    <span>เลือกบทเรียนจากแถบด้านซ้ายเพื่อเริ่มแก้ไข</span>
+                  </div>
                 </div>
               )}
             </section>
           </div>
         )}
+
         {currentView === 'assessment' && (
-          <div className='h-full w-full overflow-y-auto bg-slate-50 p-8'>
+          <div className='h-full w-full overflow-y-auto bg-slate-50 p-4 md:p-8'>
             <div className='mx-auto max-w-4xl'>
               <AssessmentManager
                 courseId={courseId}
@@ -276,7 +335,18 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
                   setIsDirty(true)
                 }}
                 onRefresh={async () => {
-                  await fetchCourseData()
+                  // ดึงข้อมูลข้อสอบล่าสุดจาก Server
+                  router.refresh()
+                  const newData = await fetchCourseData()
+                  if (newData) {
+                    setCourseData((prev: any) => ({
+                      ...prev,
+                      examRef: newData.examRef,
+                      enableAssessment: newData.enableAssessment,
+                    }))
+                    // เคลียร์ข้อมูลข้อสอบที่แก้ไขค้างไว้เพราะดึงจาก Server ใหม่แล้ว
+                    setPendingExamData(null)
+                  }
                 }}
               />
             </div>
@@ -284,7 +354,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
         )}
 
         {currentView === 'settings' && (
-          <div className='h-full w-full overflow-y-auto bg-slate-50 p-8'>
+          <div className='h-full w-full overflow-y-auto bg-slate-50 p-4 md:p-8'>
             <div className='mx-auto max-w-4xl'>
               <CourseSettingsForm
                 courseId={courseId}
@@ -301,9 +371,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
 
       {/* --- AlertDialog: Confirm Discard Draft --- */}
       <AlertDialog open={isDiscardDialogOpen} onOpenChange={setIsDiscardDialogOpen}>
-        <AlertDialogContent className='font-prompt'>
-          {' '}
-          {/* ใส่ font-prompt ให้เข้าชุดกัน */}
+        <AlertDialogContent className='font-prompt max-w-[90vw] rounded-lg md:max-w-lg'>
           <AlertDialogHeader>
             <AlertDialogTitle className='text-xl font-bold text-red-600'>
               ยืนยันการล้างฉบับร่าง?
@@ -314,11 +382,13 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
               การกระทำนี้ไม่สามารถย้อนคืนได้
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className='mt-4'>
-            <AlertDialogCancel className='rounded-lg'>ยกเลิก</AlertDialogCancel>
+          <AlertDialogFooter className='mt-4 flex-col gap-2 md:flex-row'>
+            <AlertDialogCancel className='mt-2 w-full rounded-lg md:mt-0 md:w-auto'>
+              ยกเลิก
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDiscardDraft}
-              className='rounded-lg bg-red-600 text-white hover:bg-red-700'
+              className='w-full rounded-lg bg-red-600 text-white hover:bg-red-700 md:w-auto'
             >
               ยืนยันการทิ้งฉบับร่าง
             </AlertDialogAction>

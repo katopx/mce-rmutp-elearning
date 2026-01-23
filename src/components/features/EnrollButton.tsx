@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
-import { enrollCourse, checkEnrollment } from '@/lib/firebase/services'
+import { enrollCourse, checkEnrollment } from '@/lib/firebase'
 import { toast } from 'sonner'
 
 interface EnrollButtonProps {

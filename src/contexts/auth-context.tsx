@@ -2,7 +2,7 @@
 
 import GlobalLoading from '@/components/layout/common/GlobalLoading'
 import { auth } from '@/lib/firebase/config'
-import { syncUserDatabase } from '@/lib/firebase/services'
+import { syncUserDatabase } from '@/lib/firebase'
 import { deleteCookie, setCookie } from 'cookies-next'
 import { onAuthStateChanged, User } from 'firebase/auth'
 import { createContext, useContext, useEffect, useState } from 'react'

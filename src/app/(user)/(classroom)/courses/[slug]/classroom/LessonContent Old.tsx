@@ -15,7 +15,7 @@ import ExercisePlayer from './ExercisePlayer'
 
 // Services
 import { useAuth } from '@/contexts/auth-context'
-import { updateCourseProgressPercentage, updateLessonProgress } from '@/lib/firebase/services'
+import { updateCourseProgressPercentage, updateLessonProgress } from '@/lib/firebase'
 
 interface LessonContentProps {
   lesson: any

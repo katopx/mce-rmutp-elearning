@@ -24,7 +24,7 @@ import {
   getCourseRatingStats,
   getRegisteredCount,
   toggleBookmark,
-} from '@/lib/firebase/services'
+} from '@/lib/firebase'
 import { cn } from '@/lib/utils'
 import { formatDuration } from '@/utils/format'
 import {
@@ -115,7 +115,10 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
     if (!user) return
     setIsSubmitting(true)
     try {
-      await enrollCourse(user.uid, course)
+      await enrollCourse(user.uid, course, {
+        name: user.displayName || '',
+        image: user.photoURL || '',
+      })
       toast.success('ลงทะเบียนสำเร็จ!')
       setIsEnrolled(true)
       router.push(`/courses/${course.slug}/classroom`)

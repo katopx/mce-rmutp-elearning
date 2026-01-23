@@ -244,7 +244,7 @@ function SortableLesson({ lesson, selectedLessonKey, onSelect, onDelete }: any) 
         <span>
           {lesson.title}{' '}
           {lesson.isNew && (
-            <span className='ml-2 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-600'>
+            <span className='ml-2 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-normal text-green-600'>
               ใหม่
             </span>
           )}

@@ -23,6 +23,7 @@ async function getExamData(examId: string) {
       choices[] {
         _key,
         choiceText,
+        "choiceImage": choiceImage.asset->url,
         isCorrect 
       },
       correctAnswerText, 
