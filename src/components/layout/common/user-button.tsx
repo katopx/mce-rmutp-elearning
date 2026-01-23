@@ -17,7 +17,15 @@ import { ROLE_DISPLAY } from '@/utils/roles'
 import { deleteCookie, setCookie } from 'cookies-next'
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
-import { FolderHeart, Home, LogInIcon, LogOutIcon, MonitorCog, TvMinimalPlay, UserIcon } from 'lucide-react'
+import {
+  FolderHeart,
+  Home,
+  LogInIcon,
+  LogOutIcon,
+  MonitorCog,
+  TvMinimalPlay,
+  UserIcon,
+} from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { ReactNode } from 'react'
@@ -111,7 +119,9 @@ export function UserButton({ trigger, align = 'end' }: Props) {
       {/* Name Label (Desktop Only) */}
       <div className='hidden flex-col items-end leading-tight sm:flex'>
         <span className='text-slate-900'>{user.displayName}</span>
-        <span className='rounded bg-blue-50 px-1.5 text-xs text-blue-600 uppercase'>{roleConfig.label}</span>
+        <span className='rounded bg-blue-50 px-1.5 text-xs text-blue-600 uppercase'>
+          {roleConfig.label}
+        </span>
       </div>
 
       <DropdownMenu>
@@ -141,7 +151,9 @@ export function UserButton({ trigger, align = 'end' }: Props) {
             </div>
             <div className='flex min-w-0 flex-1 flex-col'>
               <span className='truncate text-slate-900'>{user.displayName || 'ไม่แสดงชื่อ'}</span>
-              <span className='truncate text-xs text-slate-500 italic'>{user.email || 'ไม่แสดงอีเมล'}</span>
+              <span className='truncate text-xs text-slate-500 italic'>
+                {user.email || 'ไม่แสดงอีเมล'}
+              </span>
             </div>
           </DropdownMenuLabel>
 
@@ -149,19 +161,19 @@ export function UserButton({ trigger, align = 'end' }: Props) {
 
           <DropdownMenuGroup>
             <DropdownMenuItem asChild className='cursor-pointer px-4 py-2'>
-              <Link href='#' className='flex w-full items-center'>
+              <Link href='/my-profile' className='flex w-full items-center'>
                 <UserIcon className='mr-2 size-5' />
                 <span>บัญชีของฉัน</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className='cursor-pointer px-4 py-2'>
-              <Link href='#' className='flex w-full items-center'>
+              <Link href='/my-profile?tab=courses' className='flex w-full items-center'>
                 <TvMinimalPlay className='mr-2 size-5' />
                 <span>หลักสูตรของฉัน</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className='cursor-pointer px-4 py-2'>
-              <Link href='#' className='flex w-full items-center'>
+              <Link href='/my-profile?tab=favorites' className='flex w-full items-center'>
                 <FolderHeart className='mr-2 size-5' />
                 <span>รายการโปรด</span>
               </Link>

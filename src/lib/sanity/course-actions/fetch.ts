@@ -36,6 +36,25 @@ export async function getCourseMetadata() {
   }
 }
 
+export const getCoursesByIds = async (ids: string[]) => {
+  if (!ids || ids.length === 0) return []
+
+  // ดึงคอร์สที่ _id อยู่ในรายการที่เราส่งไป
+  const query = groq`*[_type == "course" && _id in $ids]{
+    _id,
+    title,
+    "slug": slug.current,
+    "image": image.asset->url,
+    shortDescription,
+    "category": category[]->title,
+    difficulty,
+    "instructor": instructor->name,
+    "totalLessons": count(modules[].lessons[])
+  }`
+
+  return await adminClient.fetch(query, { ids })
+}
+
 /**
  * 2. Fetch ข้อมูลหลักสูตรแบบเต็มตามโครงสร้าง Schema ล่าสุด
  * ใช้สำหรับหน้า Admin Course Editor

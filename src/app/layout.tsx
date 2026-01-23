@@ -26,10 +26,14 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang='en'>
+    <html lang='th'>
       <body className={`${prompt.variable} antialiased`}>
         <Suspense fallback={<Loading />}>
-          <NextTopLoader color='#2563eb' showSpinner={false} shadow='0 0 10px #2563eb,0 0 5px #2563eb' />
+          <NextTopLoader
+            color='#2563eb'
+            showSpinner={false}
+            shadow='0 0 10px #2563eb,0 0 5px #2563eb'
+          />
           <AuthProvider>
             {children}
             <Toaster position='top-center' />

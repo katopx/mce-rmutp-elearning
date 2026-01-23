@@ -1,8 +1,9 @@
+import loading from '@/app/loading'
 import { client } from '@/sanity/lib/client'
 import { BookOpen, ImageIcon, RotateCcw, User } from 'lucide-react'
 import Link from 'next/link'
 
-async function showManuals() {
+async function getManualsData() {
   const query = `*[_type == "manual" && status == "published"] | order(_createdAt desc) {
     _id,
     title,
@@ -16,7 +17,7 @@ async function showManuals() {
 }
 
 export default async function ManualPage() {
-  const manuals = await showManuals()
+  const manuals = await getManualsData()
 
   if (manuals.length === 0) {
     return (

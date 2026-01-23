@@ -1,4 +1,15 @@
-import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  collection,
+  where,
+  orderBy,
+  getDocs,
+} from 'firebase/firestore'
 import { db } from './config'
 
 // ==========================================
@@ -60,4 +71,47 @@ export const checkBookmarkStatus = async (userId: string, courseId: string) => {
   const bookmarkRef = doc(db, 'users', userId, 'bookmarks', bookmarkId)
   const snap = await getDoc(bookmarkRef)
   return snap.exists()
+}
+
+// ==========================================
+// UPDATE USER PROFILE
+// ==========================================
+export async function updateUserProfile(uid: string, data: any) {
+  try {
+    const userRef = doc(db, 'users', uid)
+    await updateDoc(userRef, {
+      ...data,
+      updatedAt: new Date().toISOString(),
+    })
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating profile:', error)
+    return { success: false, error }
+  }
+}
+
+// ดึงรายการที่ลงทะเบียนเรียน
+export const getMyEnrollments = async (userId: string) => {
+  const q = query(
+    collection(db, 'enrollments'),
+    where('userId', '==', userId),
+    orderBy('lastAccessed', 'desc'),
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+}
+
+// ดึงรายการโปรด (Bookmarks)
+export const getMyBookmarks = async (userId: string) => {
+  try {
+    // ดึงจาก Sub-collection: users/{userId}/bookmarks
+    const bookmarkRef = collection(db, 'users', userId, 'bookmarks')
+    const snap = await getDocs(bookmarkRef)
+
+    // คืนค่ากลับไปเป็นแค่ [ "id1", "id2", ... ]
+    return snap.docs.map((doc) => doc.data().courseId)
+  } catch (error) {
+    console.error('Error fetching bookmarks:', error)
+    return []
+  }
 }

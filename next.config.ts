@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/',
-        destination: '/courses',
+        destination: '/home',
         permanent: true, // หรือ false ถ้าอนาคตจะกลับมาใช้หน้า /
       },
     ]
