@@ -176,10 +176,9 @@ export async function saveCourseStructureAction(
         }
 
         // 3. ถ้าเป็น Document หรือ PDF
-        if (lessonData.lessonType === 'document' || lessonData.lessonType === 'pdf') {
-          lessonData.pdfUrl = lesson.pdfUrl || ''
-          lessonData.startPage = Number(lesson.startPage) || 1
-          lessonData.endPage = lesson.endPage ? Number(lesson.endPage) : null
+        if (lessonData.lessonType === 'document') {
+          lessonData.documentUrl = lesson.documentUrl || ''
+          lessonData.pageSelection = lesson.pageSelection || 'all'
           // อนุญาตให้เก็บเนื้อหา Text Editor ไว้เป็นคำอธิบายใต้ PDF ด้วย
           lessonData.articleContent = lesson.articleContent || ''
         }

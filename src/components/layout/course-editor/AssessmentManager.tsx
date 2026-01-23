@@ -9,6 +9,9 @@ import {
   GraduationCap,
   Trash2,
   AlertTriangle,
+  ShieldCheck,
+  Shuffle,
+  Eye,
 } from 'lucide-react'
 
 // UI Components
@@ -43,15 +46,12 @@ import { cn } from '@/lib/utils'
 interface AssessmentManagerProps {
   courseId: string
   examId?: string | null
-
-  // 🔥 Props สำคัญสำหรับ Global Save
-  pendingData?: any // ข้อมูลที่แก้ค้างไว้จาก Parent
-  onUpdate: (data: any) => void // ฟังก์ชันส่งค่ากลับไป Parent
-  onRefresh: () => Promise<void> // เปลี่ยนเป็น Promise เพื่อรอ Fetch เสร็จ
-
-  // ✅ Props สำหรับ Switch เปิด/ปิด
+  pendingData?: any
+  onUpdate: (data: any) => void
+  onRefresh: () => Promise<void>
   isEnabled: boolean
   onToggleEnable: (checked: boolean) => void
+  courseTitle?: string
 }
 
 export default function AssessmentManager({
@@ -62,6 +62,7 @@ export default function AssessmentManager({
   onRefresh,
   isEnabled,
   onToggleEnable,
+  courseTitle,
 }: AssessmentManagerProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false) // สำหรับปุ่ม Create/Delete
@@ -70,22 +71,32 @@ export default function AssessmentManager({
   // เก็บข้อมูลที่โหลดมาจาก Server (แยกจาก pendingData ที่แก้ค้างไว้)
   const [serverData, setServerData] = useState<any>(null)
 
-  // 1. Load Data เมื่อ examId เปลี่ยน
   useEffect(() => {
-    // ถ้าไม่มี Exam ID (ถูกลบไปแล้ว) ให้เคลียร์ข้อมูลทิ้งทันที
     if (!examId) {
       setServerData(null)
-      // อย่าลืมเคลียร์ pendingData ใน Parent ด้วย (ทำผ่าน onUpdate)
-      // แต่ในที่นี้ page.tsx จัดการ state แยกกันอยู่แล้ว ไม่ต้องห่วง
       return
     }
+    const loadData = async () => {
+      setIsLoading(true)
+      const data = await getExamById(examId)
+      if (data) {
+        setServerData(data)
+      }
+      setIsLoading(false)
+    }
+    loadData()
+  }, [examId, pendingData === null])
 
-    // ถ้ามี pendingData อยู่แล้ว (เช่น สลับ Tab ไปมา) ไม่ต้องโหลดใหม่
-    // แต่ถ้า examId เปลี่ยน (เช่น เพิ่งสร้างใหม่) ต้องโหลดใหม่เสมอ
+  // 1. Load Data เมื่อ examId เปลี่ยน
+  useEffect(() => {
     async function loadData() {
+      if (!examId) {
+        setServerData(null)
+        return
+      }
       setIsLoading(true)
       try {
-        const data = await getExamById(examId!)
+        const data = await getExamById(examId)
         if (data) {
           setServerData(data)
         }
@@ -95,21 +106,22 @@ export default function AssessmentManager({
         setIsLoading(false)
       }
     }
-
     loadData()
   }, [examId])
 
   // คำนวณข้อมูลที่จะแสดงผล:
-  // 1. ถ้ามี pendingData (กำลังแก้ไข) ให้ใช้ตัวนี้
-  // 2. ถ้าไม่มี pendingData ให้ใช้ serverData (ที่โหลดมา)
-  // 3. ถ้าไม่มีทั้งคู่ ให้ใช้ค่า default
   const displayData = pendingData ||
     serverData || {
       questions: [],
       timeLimit: 0,
       passingScore: 60,
-      shuffleQuestions: false,
       maxAttempts: 0,
+      shuffleQuestions: false,
+      shuffleChoices: false,
+      showResultImmediate: false,
+      allowReview: false,
+      preventTabSwitch: false,
+      preventCopyPaste: false,
     }
 
   // --- Handlers: Create / Delete (Direct Actions) ---
@@ -117,7 +129,8 @@ export default function AssessmentManager({
   const handleCreate = async () => {
     setIsProcessing(true)
     try {
-      const res = await createAndLinkExamAction(courseId, 'แบบทดสอบวัดผลก่อนและหลังเรียน')
+      const examTitle = `แบบทดสอบ: ${courseTitle}`
+      const res = await createAndLinkExamAction(courseId, examTitle)
       if (res.success) {
         toast.success('สร้างแบบทดสอบเรียบร้อย')
         // สำคัญ: รอ Refresh ให้เสร็จ เพื่อให้ examId ใหม่ส่งกลับมา
@@ -155,17 +168,24 @@ export default function AssessmentManager({
   // --- Handlers: Editing (Pass to Parent) ---
 
   const handleQuestionsChange = (newQuestions: any[]) => {
-    onUpdate({
+    const updatedData = {
       ...displayData,
       questions: newQuestions,
-    })
+      title: `แบบทดสอบ: ${courseTitle}`,
+    }
+    const { setting, settings, _rev, ...cleanData } = updatedData
+    onUpdate(cleanData)
   }
 
   const handleSettingsChange = (field: string, value: any) => {
-    onUpdate({
+    // สร้างโครงสร้างข้อมูลที่ถูกต้องตาม Schema ( exam.ts )
+    const updatedData = {
       ...displayData,
       [field]: value,
-    })
+      title: `แบบทดสอบ: ${courseTitle}`,
+    }
+    const { setting, settings, _rev, _updatedAt, _createdAt, ...cleanData } = updatedData
+    onUpdate(cleanData)
   }
 
   // ================= RENDER =================
@@ -316,7 +336,7 @@ export default function AssessmentManager({
           </TabsContent>
 
           {/* Tab 2: Settings */}
-          <TabsContent value='settings'>
+          <TabsContent value='settings' className='space-y-6'>
             <Card>
               <CardHeader>
                 <CardTitle className='flex items-center gap-2 text-lg'>
@@ -324,8 +344,9 @@ export default function AssessmentManager({
                   กำหนดเกณฑ์การสอบ
                 </CardTitle>
               </CardHeader>
-              <CardContent className='space-y-6'>
-                <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+              <CardContent className='space-y-8'>
+                {/* 1. กลุ่ม Input ตัวเลข*/}
+                <div className='grid grid-cols-1 gap-6 sm:grid-cols-3'>
                   <div className='space-y-3'>
                     <Label>เวลาในการทำ (นาที)</Label>
                     <Input
@@ -333,8 +354,13 @@ export default function AssessmentManager({
                       value={displayData.timeLimit}
                       onChange={(e) => handleSettingsChange('timeLimit', Number(e.target.value))}
                       placeholder='0 = ไม่จับเวลา'
+                      className='h-11'
                     />
+                    <p className='text-[10px] leading-tight text-slate-400'>
+                      * ใส่ 0 เพื่อไม่จำกัดเวลาในการสอบ
+                    </p>
                   </div>
+
                   <div className='space-y-3'>
                     <Label>เกณฑ์คะแนนผ่าน (%)</Label>
                     <Input
@@ -342,29 +368,149 @@ export default function AssessmentManager({
                       max={100}
                       value={displayData.passingScore}
                       onChange={(e) => handleSettingsChange('passingScore', Number(e.target.value))}
+                      className='h-11'
                     />
                   </div>
+
                   <div className='space-y-3'>
-                    <Label>จำนวนครั้งที่สอบได้ (0 = ไม่จำกัด)</Label>
+                    <Label>จำนวนครั้งที่สอบได้</Label>
                     <Input
                       type='number'
+                      min={0}
                       value={displayData.maxAttempts}
                       onChange={(e) => handleSettingsChange('maxAttempts', Number(e.target.value))}
+                      placeholder='0 = ไม่จำกัด'
+                      className='h-11'
+                    />
+                    <p className='text-[10px] leading-tight text-slate-400'>
+                      * ใส่ 0 เพื่อให้ผู้เรียนสอบซ้ำได้ไม่จำกัด
+                    </p>
+                  </div>
+                </div>
+
+                <hr className='border-slate-100' />
+
+                {/* 2. กลุ่ม Switch (จัด 2 คอลัมน์) */}
+                <div className='grid grid-cols-1 gap-8 md:grid-cols-2'>
+                  {/* การสุ่มลำดับ */}
+                  <div className='space-y-4'>
+                    <Label className='flex items-center gap-2 text-sm font-semibold text-slate-700'>
+                      <Shuffle className='size-4 text-blue-500' /> การสุ่มลำดับ
+                    </Label>
+                    <div className='space-y-2'>
+                      <div className='flex items-center justify-between rounded-xl border bg-slate-50/50 p-3 px-4'>
+                        <span className='text-xs font-medium text-slate-600'>
+                          สุ่มลำดับคำถาม{' '}
+                          <span className='text-[10px] text-red-600'>(ยังไม่พร้อมใช้งาน)</span>
+                        </span>
+                        <Switch
+                          disabled
+                          checked={displayData.shuffleQuestions}
+                          onCheckedChange={(v) => handleSettingsChange('shuffleQuestions', v)}
+                          className='data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200'
+                        />
+                      </div>
+                      <div className='flex items-center justify-between rounded-xl border bg-slate-50/50 p-3 px-4'>
+                        <span className='text-xs font-medium text-slate-600'>
+                          สุ่มลำดับตัวเลือก (ก,ข,ค,ง)
+                          <span className='text-[10px] text-red-600'> (ยังไม่พร้อมใช้งาน)</span>
+                        </span>
+                        <Switch
+                          disabled
+                          checked={displayData.shuffleChoices}
+                          onCheckedChange={(v) => handleSettingsChange('shuffleChoices', v)}
+                          className='data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200'
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* การแสดงผล */}
+                  <div className='space-y-4'>
+                    <Label className='flex items-center gap-2 text-sm font-semibold text-slate-700'>
+                      <Eye className='size-4 text-blue-500' /> การแสดงผลลัพธ์
+                    </Label>
+                    <div className='space-y-2'>
+                      <div className='flex items-center justify-between rounded-xl border bg-slate-50/50 p-3 px-4'>
+                        <span className='text-xs font-medium text-slate-600'>
+                          แสดงคะแนนทันทีหลังสอบ
+                          <span className='text-[10px] text-red-600'> (ยังไม่พร้อมใช้งาน)</span>
+                        </span>
+                        <Switch
+                          disabled
+                          checked={displayData.showResultImmediate}
+                          onCheckedChange={(v) => handleSettingsChange('showResultImmediate', v)}
+                          className='data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200'
+                        />
+                      </div>
+                      <div className='flex items-center justify-between rounded-xl border bg-slate-50/50 p-3 px-4'>
+                        <span className='text-xs font-medium text-slate-600'>
+                          อนุญาตให้ดูเฉลยหลังสอบ{' '}
+                          <span className='text-[10px] text-red-600'>(ยังไม่พร้อมใช้งาน)</span>
+                        </span>
+                        <Switch
+                          disabled
+                          checked={displayData.allowReview}
+                          onCheckedChange={(v) => handleSettingsChange('allowReview', v)}
+                          className='data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200'
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* ส่วนความปลอดภัย (Anti-Cheat) คงเดิมแต่ปรับ Padding ให้สมดุล */}
+            <Card className='border-orange-100 bg-orange-50/30'>
+              <CardHeader>
+                <CardTitle className='flex items-center gap-2 text-lg text-orange-800'>
+                  <ShieldCheck className='h-5 w-5' />
+                  ระบบความปลอดภัย (Anti-Cheat)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                  <div className='flex items-center justify-between rounded-xl border bg-white p-4 shadow-sm transition-all hover:shadow-md'>
+                    <div className='space-y-1'>
+                      <p className='text-sm font-bold text-slate-700'>
+                        ป้องกันการสลับหน้าจอ
+                        <span className='text-[10px] font-medium text-red-600'>
+                          {' '}
+                          (ยังไม่พร้อมใช้งาน)
+                        </span>
+                      </p>
+                      <p className='text-[11px] text-slate-500'>
+                        แจ้งเตือนเมื่อผู้เรียนเปลี่ยน Tab หรือเปิดโปรแกรมอื่น
+                      </p>
+                    </div>
+                    <Switch
+                      disabled
+                      checked={displayData.preventTabSwitch}
+                      onCheckedChange={(v) => handleSettingsChange('preventTabSwitch', v)}
+                      className='data-[state=checked]:bg-orange-600 data-[state=unchecked]:bg-slate-200'
                     />
                   </div>
-                  <div className='space-y-3'>
-                    <Label>การสุ่มโจทย์</Label>
-                    <div className='flex h-[42px] items-center gap-3 rounded-md border p-2.5'>
-                      <Switch
-                        checked={displayData.shuffleQuestions}
-                        onCheckedChange={(checked) =>
-                          handleSettingsChange('shuffleQuestions', checked)
-                        }
-                      />
-                      <span className='text-sm text-slate-600'>
-                        {displayData.shuffleQuestions ? 'สุ่มลำดับทุกครั้ง' : 'เรียงตามลำดับปกติ'}
-                      </span>
+
+                  <div className='flex items-center justify-between rounded-xl border bg-white p-4 shadow-sm transition-all hover:shadow-md'>
+                    <div className='space-y-1'>
+                      <p className='text-sm font-bold text-slate-700'>
+                        ป้องกันการคัดลอก/วาง
+                        <span className='text-[10px] font-medium text-red-600'>
+                          {' '}
+                          (ยังไม่พร้อมใช้งาน)
+                        </span>
+                      </p>
+                      <p className='text-[11px] text-slate-500'>
+                        ปิดการใช้งานคลิกขวาและการใช้ปุ่มลัด Copy-Paste
+                      </p>
                     </div>
+                    <Switch
+                      disabled
+                      checked={displayData.preventCopyPaste}
+                      onCheckedChange={(v) => handleSettingsChange('preventCopyPaste', v)}
+                      className='data-[state=checked]:bg-orange-600 data-[state=unchecked]:bg-slate-200'
+                    />
                   </div>
                 </div>
               </CardContent>

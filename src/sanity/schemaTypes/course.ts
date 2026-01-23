@@ -95,12 +95,12 @@ export default defineType({
       group: 'stats',
       options: {
         list: [
-          { title: 'ระดับพื้นฐาน', value: 'Basic' },
-          { title: 'ระดับปานกลาง', value: 'Intermediate' },
-          { title: 'ระดับสูง', value: 'Advanced' },
+          { title: 'ระดับพื้นฐาน', value: 'basic' },
+          { title: 'ระดับปานกลาง', value: 'intermediate' },
+          { title: 'ระดับสูง', value: 'advanced' },
         ],
       },
-      initialValue: 'Basic',
+      initialValue: 'basic',
     }),
     defineField({
       name: 'rating',
@@ -349,26 +349,21 @@ export default defineType({
 
                     // --- กรณีเลือก Document  ---
                     {
-                      name: 'pdfUrl',
+                      name: 'documentUrl',
                       title: 'ลิงก์ไฟล์ PDF (Google Drive หรือ URL)',
                       type: 'url',
                       hidden: ({ parent }) => parent?.lessonType !== 'document',
                     },
-                    {
-                      name: 'startPage',
-                      title: 'เริ่มจากหน้าที่',
-                      type: 'number',
-                      initialValue: 1,
-                      hidden: ({ parent }) => parent?.lessonType !== 'document',
-                    },
-                    {
-                      name: 'endPage',
-                      title: 'ถึงหน้าที่',
-                      type: 'number',
-                      description: 'ปล่อยว่างหากต้องการแสดงจนจบไฟล์',
-                      hidden: ({ parent }) => parent?.lessonType !== 'document',
-                    },
 
+                    {
+                      name: 'pageSelection',
+                      title: 'หน้าที่ต้องการแสดงผล',
+                      type: 'string', // เก็บเป็น String เพื่อรองรับ "1-5, 8, 11-13"
+                      description:
+                        'ระบุหน้าแบบอิสระ เช่น 1-5, 8, 11-13 หรือพิมพ์ all เพื่อแสดงทุกหน้า',
+                      initialValue: 'all',
+                      hidden: ({ parent }) => parent?.lessonType !== 'document',
+                    },
                     // --- Exercise (ฝังในหลักสูตร - Inline) ---
                     {
                       name: 'exerciseData',
@@ -535,7 +530,7 @@ export default defineType({
                         video: '🎬 Video',
                         article: '📄 Article',
                         exercise: '📝 Exercise',
-                        //assessment: '📝 Assessment',
+                        document: '📄 Document',
                       }
                       let subtitleInfo = icons[lessonType] || 'Unknown'
 

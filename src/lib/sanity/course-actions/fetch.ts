@@ -86,9 +86,9 @@ export async function getFullCourseDataAction(courseId: string) {
             videoUrl,
             videoContent,
             articleContent,
-            pdfUrl,
-            startPage,
-            endPage,
+            documentUrl,
+            pageSelection,
+
             // แบบฝึกหัด (Inline Object)
             exerciseData {
               questions[] {

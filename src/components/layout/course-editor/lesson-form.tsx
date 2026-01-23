@@ -29,6 +29,7 @@ import {
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import ExerciseManager from './ExerciseManager'
+import dynamic from 'next/dynamic'
 
 interface LessonFormProps {
   lesson: any
@@ -37,13 +38,19 @@ interface LessonFormProps {
   courseId: string
 }
 
+// โหลด LockedPDFViewer แบบ Client-only
+const LockedPDFViewer = dynamic(() => import('@/components/features/locked-pdf-viewer'), {
+  ssr: false,
+  loading: () => (
+    <div className='flex h-full w-full items-center justify-center bg-slate-100 text-slate-400'>
+      กำลังโหลดตัวอย่างเอกสาร...
+    </div>
+  ),
+})
+
 export default function LessonForm({ lesson, onUpdate, exams = [], courseId }: LessonFormProps) {
   const [isMounted, setIsMounted] = useState(false)
   const [detectedDuration, setDetectedDuration] = useState<number>(0)
-
-  const isSettingsEnabled = ['exercise'].includes(lesson.lessonType)
-  // const [isCreating, setIsCreating] = useState(false) // Unused variable removed
-  // const [examSettings, setExamSettings] = useState(...) // Unused variable removed
 
   useEffect(() => setIsMounted(true), [])
 
@@ -103,6 +110,12 @@ export default function LessonForm({ lesson, onUpdate, exams = [], courseId }: L
       default:
         return ''
     }
+  }
+
+  const getFileId = (url: string) => {
+    if (!url) return null
+    const match = url.match(/\/d\/(.+?)\//) || url.match(/id=(.+?)(&|$)/)
+    return match ? match[1] : null
   }
 
   return (
@@ -272,7 +285,7 @@ export default function LessonForm({ lesson, onUpdate, exams = [], courseId }: L
               {/* Description*/}
               <div className='space-y-3 pt-4'>
                 <Label className='text-sm font-medium text-slate-900 md:text-base'>
-                  คำอธิบายประกอบวิดีโอ
+                  คำอธิบายประกอบบทเรียน
                 </Label>
                 <div className='max-w-full overflow-hidden'>
                   <TextEditor
@@ -297,7 +310,7 @@ export default function LessonForm({ lesson, onUpdate, exams = [], courseId }: L
             </div>
           )}
 
-          {/* ✅ CASE 4: PDF (NEW) */}
+          {/* ✅ CASE 4: DOCUMENT */}
           {lesson.lessonType === 'document' && (
             <>
               <div className='space-y-4'>
@@ -317,7 +330,7 @@ export default function LessonForm({ lesson, onUpdate, exams = [], courseId }: L
                   </Label>
                   <div className='flex gap-2'>
                     <Input
-                      value={lesson.pdfUrl || ''}
+                      value={lesson.documentUrl || ''}
                       onChange={(e) => {
                         let val = e.target.value
                         // ✅ เช็คถ้าเป็นลิงก์ Google Drive ให้แปลงเป็น /preview ทันที
@@ -326,13 +339,13 @@ export default function LessonForm({ lesson, onUpdate, exams = [], courseId }: L
                             .replace(/\/view.*$/, '/preview')
                             .replace(/\/edit.*$/, '/preview')
                         }
-                        handleChange('pdfUrl', val)
+                        handleChange('documentUrl', val)
                       }}
                       placeholder='วางลิงก์ Google Drive ที่นี่...'
                       className='h-11 border-slate-200 bg-white'
                     />
-                    {lesson.pdfUrl && (
-                      <a href={lesson.pdfUrl} target='_blank' rel='noreferrer'>
+                    {lesson.documentUrl && (
+                      <a href={lesson.documentUrl} target='_blank' rel='noreferrer'>
                         <Button size='icon' variant='outline' className='h-11 w-11 shrink-0'>
                           <ExternalLink size={18} />
                         </Button>
@@ -341,57 +354,45 @@ export default function LessonForm({ lesson, onUpdate, exams = [], courseId }: L
                   </div>
                 </div>
 
-                {/* ✅ ระบุช่วงหน้าเพื่อ "ซอย" บทเรียน */}
-                <div className='grid grid-cols-2 gap-4'>
-                  <div className='space-y-2'>
-                    <Label className='text-xs font-bold tracking-wider text-slate-500 uppercase'>
-                      เริ่มแสดงหน้าที่
-                    </Label>
-                    <div className='relative'>
-                      <Input
-                        type='number'
-                        min={1}
-                        value={lesson.startPage || 1}
-                        onChange={(e) => handleChange('startPage', parseInt(e.target.value) || 1)}
-                        className='h-11 pl-10'
-                      />
-                      <FileText className='absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400' />
-                    </div>
-                  </div>
-
-                  <div className='space-y-2'>
-                    <Label className='text-xs font-bold tracking-wider text-slate-500 uppercase'>
-                      สิ้นสุดหน้าที่
-                    </Label>
-                    <Input
-                      type='number'
-                      min={1}
-                      value={lesson.endPage || ''}
-                      onChange={(e) =>
-                        handleChange('endPage', e.target.value ? parseInt(e.target.value) : '')
-                      }
-                      placeholder='(ไม่ระบุ)'
-                      className='h-11'
-                    />
-                  </div>
+                {/* ระบุช่วงหน้าเพื่อ "ซอย" บทเรียน */}
+                <div className='space-y-2'>
+                  <Label className='flex items-center gap-2 text-xs font-normal text-slate-500'>
+                    <FileText size={14} /> เลือกหน้าที่ต้องการแสดงผล
+                  </Label>
+                  <Input
+                    value={lesson.pageSelection || ''}
+                    onChange={(e) => handleChange('pageSelection', e.target.value)}
+                    placeholder='ตัวอย่าง: 1-5, 8, 11-13 (พิมพ์ all เพื่อแสดงทุกหน้า)'
+                    className='h-11 border-slate-200 bg-white text-sm'
+                  />
+                  <p className='text-[11px] text-slate-400'>
+                    * ใช้ <code className='text-blue-500'>-</code> สำหรับช่วงหน้า และ{' '}
+                    <code className='text-blue-500'>,</code> สำหรับแยกหน้า
+                  </p>
                 </div>
 
                 {/* Preview จิ๋วให้ Admin ดูว่าลิงก์ใช้ได้ไหม */}
-                {lesson.pdfUrl && (
+                {lesson.documentUrl && (
                   <div className='group relative mt-4 aspect-[16/9] overflow-hidden rounded-xl border bg-slate-100'>
-                    <iframe
-                      src={`${lesson.pdfUrl}#page=${lesson.startPage || 1}`}
-                      className='h-full w-full border-none'
+                    <LockedPDFViewer
+                      fileUrl={`/api/pdf-proxy?id=${getFileId(lesson.documentUrl)}`}
+                      pageSelection={lesson.pageSelection || 'all'}
                     />
-                    <div className='pointer-events-none absolute inset-0 bg-black/5 transition-colors group-hover:bg-transparent' />
+                    <div className='pointer-events-none absolute top-3 left-3 z-10'>
+                      <Badge className='border-none bg-orange-500 text-white shadow-md hover:bg-orange-500'>
+                        ตัวอย่างหน้าเรียน
+                      </Badge>
+                    </div>
                   </div>
                 )}
 
                 <div className='space-y-3 pt-4'>
-                  <Label className='text-sm font-medium'>คำอธิบายประกอบบทเรียนนี้</Label>
+                  <Label className='text-sm font-medium text-slate-900 md:text-base'>
+                    คำอธิบายประกอบบทเรียน
+                  </Label>
                   <TextEditor
-                    content={lesson.articleContent || ''}
-                    onChange={(html) => handleChange('articleContent', html)}
+                    content={lesson.documentContent || ''}
+                    onChange={(html) => handleChange('documentContent', html)}
                   />
                 </div>
               </div>

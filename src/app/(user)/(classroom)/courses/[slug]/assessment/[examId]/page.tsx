@@ -15,7 +15,13 @@ async function getExamData(examId: string) {
     title,
     timeLimit, 
     passingScore,
+    maxAttempts,
     shuffleQuestions,
+    shuffleChoices,
+    showResultImmediate,
+    allowReview,
+    preventTabSwitch,
+    preventCopyPaste,
     questions[] {
       _key,
       questionType,

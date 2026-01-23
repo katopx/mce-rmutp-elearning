@@ -191,7 +191,7 @@ export function ClassroomSidebar({
                                     <div className='mt-2 flex items-center gap-3 text-xs font-normal text-slate-400'>
                                       <span
                                         className={cn(
-                                          'rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase',
+                                          'rounded px-1.5 py-0.5 text-[10px] font-medium',
                                           isDone
                                             ? 'bg-emerald-50 text-emerald-600'
                                             : 'bg-slate-100 text-slate-500',

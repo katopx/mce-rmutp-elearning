@@ -38,6 +38,16 @@ interface LessonContentProps {
   totalLessons: number
 }
 
+// โหลด LockedPDFViewer แบบ Client-only
+const LockedPDFViewer = dynamic(() => import('@/components/features/locked-pdf-viewer'), {
+  ssr: false,
+  loading: () => (
+    <div className='flex h-full w-full items-center justify-center bg-slate-100 text-slate-400'>
+      กำลังโหลดตัวอย่างเอกสาร...
+    </div>
+  ),
+})
+
 export default function LessonContent({
   lesson,
   courseSlug,
@@ -93,19 +103,14 @@ export default function LessonContent({
     )
   }
 
-  const getEmbedPdfUrl = (url: string, startPage: number) => {
-    if (!url) return ''
-    let processedUrl = url
-    // ถ้าเป็น Google Drive เปลี่ยนให้เป็น /preview เพื่อให้ฝังใน iframe ได้
-    if (url.includes('drive.google.com')) {
-      processedUrl = url.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview')
-    }
-    // เพิ่ม parameter สำหรับระบุหน้า
-    return `${processedUrl}#page=${startPage || 1}&view=FitH&toolbar=0`
-  }
-
   const lessonConfig = getLessonType(lesson.lessonType)
   const LessonIcon = lessonConfig.icon
+
+  const getFileId = (url: string) => {
+    if (!url) return null
+    const match = url.match(/\/d\/(.+?)\//) || url.match(/id=(.+?)(&|$)/)
+    return match ? match[1] : null
+  }
 
   return (
     <div className='animate-in fade-in slide-in-from-bottom-2 mx-auto max-w-4xl pb-32 duration-700 md:pb-20'>
@@ -201,55 +206,32 @@ export default function LessonContent({
           </section>
         )}
 
-        {/* ✅ 3. PDF / DOCUMENT CONTENT (เพิ่มใหม่) */}
-        {(lesson.lessonType === 'pdf' || lesson.lessonType === 'document') && (
+        {/* DOCUMENT CONTENT */}
+        {lesson.lessonType === 'document' && (
           <div className='space-y-6'>
             {/* PDF Viewer */}
             <div className='group relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-xl md:aspect-[16/10]'>
-              {lesson.pdfUrl ? (
-                <iframe
-                  src={getEmbedPdfUrl(lesson.pdfUrl, lesson.startPage)}
-                  className='h-full w-full border-none'
-                  allow='autoplay'
+              {lesson.documentUrl ? (
+                <LockedPDFViewer
+                  fileUrl={`/api/pdf-proxy?id=${getFileId(lesson.documentUrl)}`}
+                  pageSelection={lesson.pageSelection || 'all'}
                 />
               ) : (
                 <div className='flex h-full items-center justify-center text-slate-400'>
                   ไม่พบไฟล์เอกสาร
                 </div>
               )}
-              {/* Overlay (โชว์เฉพาะเมื่อมีไฟล์) */}
-              {lesson.pdfUrl && (
-                <div className='pointer-events-none absolute top-4 right-4'>
-                  <Badge
-                    variant='secondary'
-                    className='bg-white/90 font-light text-slate-600 shadow-sm backdrop-blur'
-                  >
-                    หน้าที่ {lesson.startPage || 1} {lesson.endPage ? `- ${lesson.endPage}` : ''}
-                  </Badge>
-                </div>
-              )}
-            </div>
-
-            {/* ปุ่มดาวน์โหลดหรือดูเต็มจอ (Optional) */}
-            <div className='flex justify-end'>
-              <Button
-                variant='ghost'
-                size='sm'
-                asChild
-                className='hover:text-primary font-light text-slate-400'
-              >
-                <a href={lesson.pdfUrl} target='_blank' rel='noopener noreferrer'>
-                  <FileDown size={16} className='mr-2' /> เปิดไฟล์ต้นฉบับ
-                </a>
-              </Button>
             </div>
 
             {/* คำอธิบายเพิ่มเติมใต้ PDF (ถ้ามี) */}
-            {lesson.articleContent && (
+            {lesson.documentContent && (
               <section className='rounded-2xl border border-slate-100 bg-white p-6 md:p-10'>
+                <h3 className='mb-6 flex items-center gap-2 text-lg font-medium text-slate-800 md:text-xl'>
+                  <FileText size={20} className='text-primary' /> รายละเอียดบทเรียน
+                </h3>
                 <article
-                  className='jodit-wysiwyg prose prose-slate max-w-none'
-                  dangerouslySetInnerHTML={{ __html: lesson.articleContent }}
+                  className='jodit-wysiwyg prose prose-slate prose-headings:font-medium prose-p:leading-relaxed max-w-none text-slate-600'
+                  dangerouslySetInnerHTML={{ __html: lesson.documentContent }}
                 />
               </section>
             )}

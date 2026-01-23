@@ -194,17 +194,16 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
         }
       }
 
-      toast.success('บันทึกข้อมูลทั้งหมดเรียบร้อย!', { id: toastId })
       localStorage.removeItem(STORAGE_KEY)
       setIsDirty(false)
-
-      setPendingExamData(null)
 
       // โหลดข้อมูลล่าสุดจาก Server อีกครั้ง
       const freshData = await fetchCourseData()
       if (freshData) {
         setCourseData(freshData)
       }
+      setPendingExamData(null)
+      toast.success('บันทึกข้อมูลทั้งหมดเรียบร้อย!', { id: toastId })
     } catch (error: any) {
       toast.error(error.message || 'เกิดข้อผิดพลาดในการบันทึก', { id: toastId })
     } finally {
@@ -326,6 +325,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ courseI
             <div className='mx-auto max-w-4xl'>
               <AssessmentManager
                 courseId={courseId}
+                courseTitle={courseData.title}
                 examId={courseData?.examRef?._ref || null}
                 pendingData={pendingExamData}
                 onUpdate={handleExamUpdate}

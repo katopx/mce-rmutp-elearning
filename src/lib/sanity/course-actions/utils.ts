@@ -77,13 +77,19 @@ export async function createAndLinkExamAction(courseId: string, title: string) {
     const newExam = await adminClient.create({
       _type: 'exam',
       title: title,
-      questions: [], // เริ่มต้นเป็น array ว่าง
-      settings: {
-        timeLimit: 0,
-        passingScore: 60,
-        maxAttempts: 0,
-        shuffleQuestions: false,
-      },
+      questions: [],
+
+      // --- ส่วนการตั้งค่า (Settings) ---
+      passingScore: 60,
+      timeLimit: 0,
+      shuffleQuestions: false,
+      shuffleChoices: false,
+      showResultImmediate: false,
+      allowReview: false,
+
+      // --- ส่วนความปลอดภัย (Security) ---
+      preventTabSwitch: false,
+      preventCopyPaste: false,
     })
 
     // 1.2 ผูกเข้ากับ Course และเปิด Switch enableAssessment
@@ -105,15 +111,24 @@ export async function createAndLinkExamAction(courseId: string, title: string) {
 // 2. ลบการเชื่อมโยง (Unlink)
 export async function unlinkExamAction(courseId: string) {
   try {
+    const course = await adminClient.fetch(`*[_type == "course" && _id == $courseId][0]{examRef}`, {
+      courseId,
+    })
+    const examId = course?.examRef?._ref
+
     await adminClient
       .patch(courseId)
-      .set({ enableAssessment: false }) // ปิดสวิตช์
-      .unset(['examRef']) // ลบ Reference ออก
+      .set({ enableAssessment: false }) // ปิดสวิตช์การใช้งาน
+      .unset(['examRef']) // ล้างข้อมูลอ้างอิง
       .commit()
 
+    if (examId) {
+      await adminClient.delete(examId)
+    }
+
     return { success: true }
-  } catch (error) {
-    console.error('Unlink Exam Error:', error)
-    return { success: false, error: 'ไม่สามารถลบการเชื่อมโยงได้' }
+  } catch (error: any) {
+    console.error('Delete & Unlink Exam Error:', error)
+    return { success: false, error: error.message || 'ไม่สามารถลบข้อมูลแบบทดสอบได้' }
   }
 }

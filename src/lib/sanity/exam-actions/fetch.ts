@@ -13,7 +13,12 @@ export async function getExamById(examId: string) {
       "timeLimit": coalesce(timeLimit, 0),
       "passingScore": coalesce(passingScore, 60),
       "maxAttempts": coalesce(maxAttempts, 0),
-      "shuffleQuestions": coalesce(shuffleQuestions, false)
+      "shuffleQuestions": coalesce(shuffleQuestions, false),
+      "shuffleChoices": coalesce(shuffleChoices, false),
+      "showResultImmediate": coalesce(showResultImmediate, false),
+      "allowReview": coalesce(allowReview, false),
+      "preventTabSwitch": coalesce(preventTabSwitch, false),
+      "preventCopyPaste": coalesce(preventCopyPaste, false)
     }`
 
     return await adminClient.fetch(query, { examId })

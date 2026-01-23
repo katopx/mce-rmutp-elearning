@@ -29,6 +29,15 @@ export default defineType({
       initialValue: 60,
     }),
     defineField({
+      name: 'maxAttempts',
+      title: 'จำนวนครั้งที่สามารถทำได้',
+      type: 'number',
+      description: 'ใส่ 0 หากไม่จำกัดจำนวนครั้ง',
+      group: 'settings',
+      initialValue: 0,
+    }),
+
+    defineField({
       name: 'timeLimit',
       title: 'เวลาในการทำ (นาที)',
       type: 'number',
