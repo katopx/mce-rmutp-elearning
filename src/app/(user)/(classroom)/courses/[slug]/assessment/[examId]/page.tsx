@@ -2,6 +2,7 @@ import { client } from '@/sanity/lib/client'
 import { groq } from 'next-sanity'
 import { notFound, redirect } from 'next/navigation'
 import AssessmentClient from './AssessmentClient'
+import { validateSlug } from '@/utils/format'
 
 interface PageProps {
   params: Promise<{ slug: string; examId: string }>
@@ -47,15 +48,18 @@ async function getCourseId(slug: string) {
 }
 
 export default async function AssessmentPage({ params, searchParams }: PageProps) {
-  const { slug, examId } = await params
+  const { slug: rawSlug, examId } = await params
   const { mode } = await searchParams
+  const decodedSlug = validateSlug(rawSlug)
 
   // ตรวจสอบ Mode (ต้องเป็น pre หรือ post เท่านั้น)
   const validMode = mode === 'post' ? 'post_test' : 'pre_test'
 
-  const [exam, courseId] = await Promise.all([getExamData(examId), getCourseId(slug)])
+  const [exam, courseId] = await Promise.all([getExamData(examId), getCourseId(decodedSlug)])
 
   if (!exam || !courseId) notFound()
 
-  return <AssessmentClient exam={exam} courseId={courseId} courseSlug={slug} mode={validMode} />
+  return (
+    <AssessmentClient exam={exam} courseId={courseId} courseSlug={decodedSlug} mode={validMode} />
+  )
 }

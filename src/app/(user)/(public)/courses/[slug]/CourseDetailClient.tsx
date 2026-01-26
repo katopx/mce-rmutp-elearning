@@ -121,7 +121,6 @@ export default function CourseDetailClient({ course }: CourseDetailProps) {
       })
       toast.success('ลงทะเบียนสำเร็จ!')
       setIsEnrolled(true)
-      router.push(`/courses/${course.slug}/classroom`)
     } catch (error: any) {
       toast.error('เกิดข้อผิดพลาด: ' + (error.message || 'กรุณาลองใหม่'))
     } finally {
